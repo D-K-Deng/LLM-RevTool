@@ -1,0 +1,29 @@
+{
+  "challenges": [
+    {
+      "name": "rop_ret2win",
+      "binary": "challenges/bin/rop_ret2win",
+      "success_regex": ["ROPE\\{[^}]+\\}"]
+    },
+    {
+      "name": "rop_split",
+      "binary": "challenges/bin/rop_split",
+      "success_regex": ["ROPE\\{[^}]+\\}"]
+    },
+    {
+      "name": "rop_callme",
+      "binary": "challenges/bin/rop_callme",
+      "success_regex": ["ROPE\\{[^}]+\\}"]
+    },
+    {
+      "name": "rop_write4",
+      "binary": "challenges/bin/rop_write4",
+      "success_regex": ["ROPE\\{[^}]+\\}"]
+    },
+    {
+      "name": "rop_badchars",
+      "binary": "challenges/bin/rop_badchars",
+      "success_regex": ["ROPE\\{[^}]+\\}"]
+    }
+  ]
+}

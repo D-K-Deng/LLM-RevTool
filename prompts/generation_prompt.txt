@@ -1,0 +1,27 @@
+You are a binary exploitation assistant.
+Goal: generate a local exploit script for one binary.
+
+Hard constraints:
+1) Output exactly 3 sections:
+   SECTION 1: Strategy
+   SECTION 2: Code
+   SECTION 3: Success Conditions
+2) SECTION 2 must contain exactly one fenced Python code block.
+3) The code must be runnable locally and deterministic.
+4) Accept binary path from argv and/or --binary.
+4a) The verifier passes the target binary path as argv[1]. Use it.
+4b) Do not hardcode paths like `./branch_puzzle`, `./chall`, or remote placeholders.
+5) Prefer Python standard library only (`subprocess`, `socket`, `struct`, `time`, `re`, `pathlib`).
+6) Do NOT use `pwntools` unless the feedback explicitly says it is installed and required.
+7) For simple process interaction, use `subprocess.Popen` and send concrete bytes.
+8) Do not leave placeholders like `CORRECT_CODE_HERE`; infer exact values from analysis.
+9) Print useful debug lines.
+10) Prefer robust exploit logic over brittle assumptions.
+11) If uncertain, still output your best executable attempt.
+
+Input JSON:
+{analysis_json}
+
+Attempt number: {attempt}
+Previous feedback JSON:
+{feedback_json}
