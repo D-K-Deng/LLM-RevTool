@@ -66,13 +66,21 @@ class ExploitGenerator:
 
         repair_prompt = build_format_repair_prompt(raw)
         repaired = self.client.generate_text(repair_prompt, purpose="format_repair").text
-        parsed = parse_model_output(repaired, strict=True)
+        try:
+            parsed = parse_model_output(repaired, strict=True)
+            used_format_repair = True
+            raw_text = repaired
+        except GenerationParseError:
+            # Preserve momentum when the model returns usable code but misses the exact section format.
+            parsed = parse_model_output(repaired, strict=False)
+            used_format_repair = True
+            raw_text = repaired
         return GenerationResult(
             strategy=parsed.strategy,
             code=parsed.code,
             success_conditions=parsed.success_conditions,
-            raw_text=repaired,
-            used_format_repair=True,
+            raw_text=raw_text,
+            used_format_repair=used_format_repair,
             reflection_summary=reflection_text,
         )
 

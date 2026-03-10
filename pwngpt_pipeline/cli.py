@@ -48,6 +48,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--max-iterations", type=int, default=None, help="Max solve iterations per binary"
     )
     parser.add_argument(
+        "--max-inner-rounds",
+        type=int,
+        default=None,
+        help="Max reflection/generation/verification rounds inside each outer attempt",
+    )
+    parser.add_argument(
         "--verification-timeout",
         type=int,
         default=None,
@@ -105,6 +111,7 @@ def build_config(args: argparse.Namespace) -> PipelineConfig:
         openai_compat_model=args.openai_model,
         reflection_openai_compat_model=args.reflection_openai_model,
         max_iterations=args.max_iterations,
+        max_inner_rounds_per_attempt=args.max_inner_rounds,
         max_retries=args.max_retries,
         strict_output=not args.relaxed_output,
         enable_pruning=not args.no_pruning,

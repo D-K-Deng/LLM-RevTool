@@ -113,6 +113,7 @@ OPENAI_COMPAT_BASE_URL=https://llm-proxy.dartmouth.edu
 OPENAI_COMPAT_API_KEY=YOUR_VIRTUAL_KEY_GOES_HERE
 OPENAI_COMPAT_MODEL=gpt-5.4-2026-03-05
 REFLECTION_OPENAI_COMPAT_MODEL=gpt-4.1-mini
+PWNGPT_MAX_INNER_ROUNDS_PER_ATTEMPT=4
 ```
 
 The OpenAI-compatible client assumes the endpoint is:
@@ -127,6 +128,7 @@ How the pipeline uses the two models:
 
 - Primary model: exploit generation
 - Reflection model: failure diagnosis, revision hints, and format repair
+- Each outer attempt can contain multiple inner reflection/generation/verification rounds
 
 This keeps iterative loops cheaper and faster while reserving the expensive model for the main exploit-writing step.
 
@@ -170,6 +172,8 @@ All commands below should be run from the project root in PowerShell.
 wsl bash -lc "cd '$REPO_ROOT_WSL' && source .venv/bin/activate && python3 -m pwngpt_pipeline.cli --help"
 ```
 
+For harder binaries, prefer a small number of outer attempts with deeper inner rounds, for example `--max-iterations 3 --max-inner-rounds 4`.
+
 ### 8.2 Analyze one binary
 
 ```powershell
@@ -179,25 +183,25 @@ wsl bash -lc "cd '$REPO_ROOT_WSL' && source .venv/bin/activate && python3 -m pwn
 ### 8.3 Solve the easiest toy binary
 
 ```powershell
-wsl bash -lc "cd '$REPO_ROOT_WSL' && source .venv/bin/activate && python3 -m pwngpt_pipeline.cli --max-iterations 3 solve --binary challenges/bin/branch_puzzle"
+wsl bash -lc "cd '$REPO_ROOT_WSL' && source .venv/bin/activate && python3 -m pwngpt_pipeline.cli --max-iterations 3 --max-inner-rounds 4 solve --binary challenges/bin/branch_puzzle"
 ```
 
 ### 8.4 Solve one public challenge
 
 ```powershell
-wsl bash -lc "cd '$REPO_ROOT_WSL' && source .venv/bin/activate && python3 -m pwngpt_pipeline.cli --max-iterations 3 solve --binary challenges/bin/rop_ret2win --success-regex 'ROPE\\{[^}]+\\}'"
+wsl bash -lc "cd '$REPO_ROOT_WSL' && source .venv/bin/activate && python3 -m pwngpt_pipeline.cli --max-iterations 3 --max-inner-rounds 4 solve --binary challenges/bin/rop_ret2win --success-regex 'ROPE\\{[^}]+\\}'"
 ```
 
 ### 8.5 Batch eval on downloaded public set
 
 ```powershell
-wsl bash -lc "cd '$REPO_ROOT_WSL' && source .venv/bin/activate && python3 -m pwngpt_pipeline.cli --max-iterations 3 eval --manifest challenges/manifest_rop.json"
+wsl bash -lc "cd '$REPO_ROOT_WSL' && source .venv/bin/activate && python3 -m pwngpt_pipeline.cli --max-iterations 3 --max-inner-rounds 4 eval --manifest challenges/manifest_rop.json"
 ```
 
 ### 8.6 Batch eval on all listed challenges
 
 ```powershell
-wsl bash -lc "cd '$REPO_ROOT_WSL' && source .venv/bin/activate && python3 -m pwngpt_pipeline.cli --max-iterations 3 eval --manifest challenges/manifest.json"
+wsl bash -lc "cd '$REPO_ROOT_WSL' && source .venv/bin/activate && python3 -m pwngpt_pipeline.cli --max-iterations 3 --max-inner-rounds 4 eval --manifest challenges/manifest.json"
 ```
 
 ## 9. Add Your Own Challenge
@@ -231,6 +235,7 @@ Each run writes to `artifacts/<binary>_<timestamp>/`:
 - `attempt_XX/raw_model_output.txt`
 - `attempt_XX/exploit.py`
 - `attempt_XX/VerificationResult.json`
+- `attempt_XX/round_YY/...` for deeper intra-attempt revisions
 - `run_summary.json`
 
 Read `run_summary.json` first. If a run fails, inspect `attempt_01/VerificationResult.json` and `attempt_01/exploit.py`.

@@ -22,7 +22,7 @@ class ExploitVerifier:
         attempt: int,
         success_regex: list[str] | None = None,
     ) -> VerificationResult:
-        patterns = [re.compile(p) for p in (success_regex or self.config.success_regex)]
+        patterns = [re.compile(p) for p in _merge_success_patterns(success_regex, self.config.success_regex)]
         env = os.environ.copy()
         env["TARGET_BINARY"] = str(binary_path.resolve())
         _augment_runtime_library_path(env, binary_path)
@@ -117,6 +117,23 @@ class ExploitVerifier:
             failure_reason=failure_reason,
             feedback_payload=feedback_payload,
         )
+
+
+def _merge_success_patterns(
+    requested_patterns: list[str] | None,
+    default_patterns: list[str],
+) -> list[str]:
+    merged: list[str] = []
+    for pattern in (requested_patterns or []):
+        if pattern not in merged:
+            merged.append(pattern)
+    for pattern in default_patterns:
+        if pattern not in merged:
+            merged.append(pattern)
+    for pattern in [r"Well done!", r"Here's your flag", r"flag:"]:
+        if pattern not in merged:
+            merged.append(pattern)
+    return merged
 
 
 def _augment_runtime_library_path(env: dict[str, str], binary_path: Path) -> None:

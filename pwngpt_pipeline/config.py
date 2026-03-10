@@ -26,6 +26,7 @@ class PipelineConfig:
     top_p: float = 0.95
     max_output_tokens: int = 4096
     max_iterations: int = 6
+    max_inner_rounds_per_attempt: int = 4
     verification_timeout_s: int = 20
     python_executable: str = sys.executable
     artifact_root: Path = Path("artifacts")
@@ -50,6 +51,7 @@ class PipelineConfig:
             openai_compat_api_key=os.getenv("OPENAI_COMPAT_API_KEY", "").strip(),
             openai_compat_model=os.getenv("OPENAI_COMPAT_MODEL", "").strip(),
             reflection_openai_compat_model=os.getenv("REFLECTION_OPENAI_COMPAT_MODEL", "").strip(),
+            max_inner_rounds_per_attempt=int(os.getenv("PWNGPT_MAX_INNER_ROUNDS_PER_ATTEMPT", "4")),
             python_executable=python_executable,
             artifact_root=Path(artifact_root),
         )
@@ -67,6 +69,7 @@ class PipelineConfig:
         openai_compat_model: Optional[str] = None,
         reflection_openai_compat_model: Optional[str] = None,
         max_iterations: Optional[int] = None,
+        max_inner_rounds_per_attempt: Optional[int] = None,
         max_retries: Optional[int] = None,
         strict_output: Optional[bool] = None,
         enable_pruning: Optional[bool] = None,
@@ -93,6 +96,8 @@ class PipelineConfig:
             self.reflection_openai_compat_model = reflection_openai_compat_model
         if max_iterations is not None:
             self.max_iterations = max_iterations
+        if max_inner_rounds_per_attempt is not None:
+            self.max_inner_rounds_per_attempt = max_inner_rounds_per_attempt
         if max_retries is not None:
             self.max_retries = max_retries
         if strict_output is not None:
