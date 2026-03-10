@@ -1,0 +1,19 @@
+{
+  "challenges": [
+    {
+      "name": "rop_fluff",
+      "binary": "challenges/bin/rop_fluff",
+      "success_regex": ["ROPE\\{[^}]+\\}"]
+    },
+    {
+      "name": "rop_pivot",
+      "binary": "challenges/bin/rop_pivot",
+      "success_regex": ["ROPE\\{[^}]+\\}"]
+    },
+    {
+      "name": "rop_ret2csu",
+      "binary": "challenges/bin/rop_ret2csu",
+      "success_regex": ["ROPE\\{[^}]+\\}"]
+    }
+  ]
+}

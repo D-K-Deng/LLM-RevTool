@@ -60,6 +60,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Timeout seconds for each exploit attempt",
     )
     parser.add_argument(
+        "--unsafe-model-commands",
+        action="store_true",
+        help="Allow the model to request arbitrary local shell commands.",
+    )
+    parser.add_argument(
         "--relaxed-output",
         action="store_true",
         help="Relax parser constraints (for ablation).",
@@ -112,6 +117,7 @@ def build_config(args: argparse.Namespace) -> PipelineConfig:
         reflection_openai_compat_model=args.reflection_openai_model,
         max_iterations=args.max_iterations,
         max_inner_rounds_per_attempt=args.max_inner_rounds,
+        allow_unsafe_model_commands=True if args.unsafe_model_commands else None,
         max_retries=args.max_retries,
         strict_output=not args.relaxed_output,
         enable_pruning=not args.no_pruning,

@@ -10,6 +10,7 @@ from .analysis import BinaryAnalyzer
 from .config import PipelineConfig
 from .llm_client import LLMClient, LLMError
 from .generation import ExploitGenerator, GenerationParseError
+from .local_tools import LocalCommandRunner, LocalToolRunner
 from .schemas import VerificationResult
 from .utils import ensure_dir, ensure_executable, sanitize_filename, utc_timestamp, write_json
 from .verification import ExploitVerifier
@@ -22,6 +23,10 @@ class SolveOrchestrator:
         self.verifier = ExploitVerifier(config)
         self.client = LLMClient(config)
         self.generator = ExploitGenerator(self.client, prompt_template_path=prompt_template_path)
+        self.tool_runner = LocalToolRunner()
+        self.command_runner = LocalCommandRunner(
+            allow_unsafe=config.allow_unsafe_model_commands
+        )
 
     def solve(
         self,
@@ -60,6 +65,7 @@ class SolveOrchestrator:
         last_error = ""
         previous_code = ""
         reflection_text = ""
+        tool_results_text = ""
         attempts_used = 0
 
         heuristic_code = _build_heuristic_exploit(analysis_report.to_dict())
@@ -135,6 +141,7 @@ class SolveOrchestrator:
             attempt_feedback = feedback
             attempt_previous_code = previous_code
             attempt_reflection_text = reflection_text
+            attempt_tool_results_text = tool_results_text
 
             for round_idx in range(1, inner_rounds + 1):
                 round_dir = attempt_dir / f"round_{round_idx:02d}"
@@ -164,6 +171,63 @@ class SolveOrchestrator:
                         (attempt_dir / "Reflection.txt").write_text(
                             attempt_reflection_text, encoding="utf-8"
                         )
+                        tool_plan = self.generator.plan_tools(
+                            analysis=analysis_report.to_dict(),
+                            attempt=attempt,
+                            feedback=attempt_feedback,
+                            previous_code=attempt_previous_code,
+                            reflection_text=attempt_reflection_text,
+                            attempt_history=attempt_history,
+                            previous_tool_results=attempt_tool_results_text,
+                        )
+                        tool_results = self.tool_runner.run_requests(
+                            binary_path=binary_path,
+                            requests=tool_plan.get("tool_requests", []),
+                        )
+                        command_results = self.command_runner.run_requests(
+                            binary_path=binary_path,
+                            requests=tool_plan.get("command_requests", []),
+                        )
+                        shell_results = self.command_runner.run_requests(
+                            binary_path=binary_path,
+                            requests=[
+                                {"command": "shell", "args": {"command": item.get("command", "")}}
+                                for item in tool_plan.get("shell_requests", [])
+                            ],
+                        )
+                        tool_summary = self.tool_runner.summarize_results(tool_results)
+                        command_summary = self.command_runner.summarize_results(
+                            command_results + shell_results
+                        )
+                        attempt_tool_results_text = (
+                            f"{tool_summary}\n\n{command_summary}".strip()
+                            if tool_summary or command_summary
+                            else "<no local tool results>"
+                        )
+                        write_json(round_dir / "ToolPlan.json", tool_plan)
+                        write_json(
+                            round_dir / "ToolResults.json",
+                            {
+                                "tool_results": tool_results,
+                                "command_results": command_results,
+                                "shell_results": shell_results,
+                            },
+                        )
+                        write_json(attempt_dir / "ToolPlan.json", tool_plan)
+                        write_json(
+                            attempt_dir / "ToolResults.json",
+                            {
+                                "tool_results": tool_results,
+                                "command_results": command_results,
+                                "shell_results": shell_results,
+                            },
+                        )
+                        (round_dir / "ToolResults.txt").write_text(
+                            attempt_tool_results_text, encoding="utf-8"
+                        )
+                        (attempt_dir / "ToolResults.txt").write_text(
+                            attempt_tool_results_text, encoding="utf-8"
+                        )
 
                     generation = self.generator.generate(
                         analysis=analysis_report.to_dict(),
@@ -173,6 +237,7 @@ class SolveOrchestrator:
                         attempt_history=attempt_history,
                         previous_code=attempt_previous_code,
                         reflection_text=attempt_reflection_text,
+                        tool_results_text=attempt_tool_results_text,
                     )
                     generation_payload = generation.to_dict()
                     generation_payload["round"] = round_idx
@@ -212,6 +277,7 @@ class SolveOrchestrator:
                                 "status": "rejected",
                                 "failure_reason": code_quality_issue,
                                 "reflection_summary": attempt_reflection_text,
+                                "tool_results_summary": attempt_tool_results_text,
                             }
                         )
                         attempt_feedback = {
@@ -249,6 +315,7 @@ class SolveOrchestrator:
                             "status": "failed",
                             "failure_reason": str(exc),
                             "reflection_summary": attempt_reflection_text,
+                            "tool_results_summary": attempt_tool_results_text,
                         }
                     )
                     attempt_feedback = {
@@ -286,6 +353,7 @@ class SolveOrchestrator:
                             "status": "unexpected_error",
                             "failure_reason": str(exc),
                             "reflection_summary": attempt_reflection_text,
+                            "tool_results_summary": attempt_tool_results_text,
                         }
                     )
                     attempt_feedback = {
@@ -331,6 +399,7 @@ class SolveOrchestrator:
                         "failure_reason": ver.failure_reason,
                         "success_reason": ver.success_reason,
                         "reflection_summary": attempt_reflection_text,
+                        "tool_results_summary": attempt_tool_results_text,
                     }
                 )
 
@@ -354,6 +423,7 @@ class SolveOrchestrator:
             feedback = attempt_feedback
             previous_code = attempt_previous_code
             reflection_text = attempt_reflection_text
+            tool_results_text = attempt_tool_results_text
 
         elapsed = perf_counter() - t0
         summary = {

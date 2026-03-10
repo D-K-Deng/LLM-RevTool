@@ -20,6 +20,7 @@ Hard constraints:
 11) If uncertain, still output your best executable attempt.
 12) The exploit must actually execute the target and print the resulting process output. Do not only build or return a payload.
 13) If the challenge matches a known family, follow the helper playbook instead of improvising.
+14) If local tool results are provided below, use them as concrete evidence instead of guessing addresses/gadgets/symbols.
 
 Helper playbook:
 {playbook_text}
@@ -32,6 +33,9 @@ Previous exploit code:
 
 Reflection summary:
 {reflection_text}
+
+Latest local tool results:
+{tool_results_text}
 
 Input JSON:
 {analysis_json}

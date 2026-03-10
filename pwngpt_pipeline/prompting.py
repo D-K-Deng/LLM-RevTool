@@ -5,6 +5,12 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Any
 
+from .local_tools import (
+    build_command_catalog_text,
+    build_tool_catalog_text,
+    build_unsafe_command_catalog_text,
+)
+
 
 def _default_generation_prompt() -> str:
     return dedent(
@@ -51,6 +57,9 @@ def _default_generation_prompt() -> str:
         Reflection summary:
         {reflection_text}
 
+        Latest local tool results:
+        {tool_results_text}
+
         Input JSON:
         {analysis_json}
 
@@ -75,6 +84,7 @@ def build_generation_prompt(
     attempt_history: list[dict[str, Any]] | None = None,
     previous_code: str = "",
     reflection_text: str = "",
+    tool_results_text: str = "",
     template_path: Path | None = None,
 ) -> str:
     template = load_generation_prompt_template(template_path)
@@ -87,6 +97,7 @@ def build_generation_prompt(
         attempt_history_json=json.dumps(attempt_history or [], indent=2, ensure_ascii=False),
         previous_code=previous_code or "<none>",
         reflection_text=reflection_text or "<none>",
+        tool_results_text=tool_results_text or "<no local tool results>",
     )
     if not strict_output:
         prompt += (
@@ -127,8 +138,12 @@ def build_reflection_prompt(
     feedback: dict[str, Any],
     previous_code: str,
     attempt_history: list[dict[str, Any]] | None = None,
+    allow_unsafe_commands: bool = False,
 ) -> str:
     playbook_text = build_playbook_text(analysis)
+    tool_catalog = build_tool_catalog_text()
+    command_catalog = build_command_catalog_text()
+    unsafe_catalog = build_unsafe_command_catalog_text() if allow_unsafe_commands else ""
     return dedent(
         f"""
         You are reflecting on a failed exploit attempt for a local binary challenge.
@@ -147,6 +162,14 @@ def build_reflection_prompt(
         Helper playbook:
         {playbook_text}
 
+        Available local tools:
+        {tool_catalog}
+
+        Available local commands:
+        {command_catalog}
+
+        {unsafe_catalog}
+
         Attempt number:
         {attempt}
 
@@ -158,6 +181,94 @@ def build_reflection_prompt(
 
         Previous exploit code:
         {previous_code or "<none>"}
+
+        Analysis JSON:
+        {json.dumps(analysis, indent=2, ensure_ascii=False)}
+        """
+    ).strip()
+
+
+def build_tool_request_prompt(
+    analysis: dict[str, Any],
+    attempt: int,
+    feedback: dict[str, Any],
+    previous_code: str,
+    reflection_text: str,
+    attempt_history: list[dict[str, Any]] | None = None,
+    previous_tool_results: str = "",
+    allow_unsafe_commands: bool = False,
+) -> str:
+    tool_catalog = build_tool_catalog_text()
+    command_catalog = build_command_catalog_text()
+    unsafe_catalog = build_unsafe_command_catalog_text() if allow_unsafe_commands else ""
+    playbook_text = build_playbook_text(analysis)
+    schema_tail = (
+        ',\n            "shell_requests": [\n              {"command": "echo test"}\n            ]'
+        if allow_unsafe_commands
+        else ""
+    )
+    shell_rule = (
+        "- Request at most 2 shell_requests.\n"
+        "- shell_requests execute arbitrary local shell commands.\n"
+        "- Use shell_requests only when tools/allowlisted commands are insufficient."
+        if allow_unsafe_commands
+        else ""
+    )
+    no_request_return = (
+        '{"tool_requests": [], "command_requests": [], "shell_requests": [], "why": "..."}'
+        if allow_unsafe_commands
+        else '{"tool_requests": [], "command_requests": [], "why": "..."}'
+    )
+    return dedent(
+        f"""
+        You are deciding whether to request local read-only analysis tools for a binary exploitation task.
+
+        Available tools:
+        {tool_catalog}
+
+        Available commands:
+        {command_catalog}
+
+        {unsafe_catalog}
+
+        Rules:
+        - Return JSON only.
+        - Use this exact schema:
+          {{
+            "tool_requests": [
+              {{"tool": "symbol_disasm", "args": {{"symbol": "usefulGadgets"}}}}
+            ],
+            "command_requests": [
+              {{"command": "file_info", "args": {{}}}}
+            ]{schema_tail},
+            "why": "short rationale"
+          }}
+        - Request at most 3 tools and at most 2 commands.
+        - Only request tools/commands if they can unlock concrete missing facts.
+        - Do not request arbitrary shell commands, writes, networking, or unrelated filesystem access.
+        {shell_rule}
+        - If no tools/commands are needed, return {no_request_return}.
+
+        Helper playbook:
+        {playbook_text}
+
+        Attempt number:
+        {attempt}
+
+        Attempt history JSON:
+        {json.dumps(attempt_history or [], indent=2, ensure_ascii=False)}
+
+        Previous feedback JSON:
+        {json.dumps(feedback, indent=2, ensure_ascii=False)}
+
+        Previous exploit code:
+        {previous_code or "<none>"}
+
+        Reflection summary:
+        {reflection_text or "<none>"}
+
+        Previous local tool results:
+        {previous_tool_results or "<none>"}
 
         Analysis JSON:
         {json.dumps(analysis, indent=2, ensure_ascii=False)}

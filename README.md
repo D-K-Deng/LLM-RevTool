@@ -3,6 +3,7 @@
 This repository implements the coding part of the proposal:
 
 - Analysis -> Generation -> Verification iterative loop
+- Read-only local tool loop that the LLM can request between iterations
 - Gemini or OpenAI-compatible exploit generation
 - Strict structured output parsing + one format-repair retry
 - Batch evaluation harness
@@ -129,8 +130,40 @@ How the pipeline uses the two models:
 - Primary model: exploit generation
 - Reflection model: failure diagnosis, revision hints, and format repair
 - Each outer attempt can contain multiple inner reflection/generation/verification rounds
+- The reflection/tool-planning loop can request local read-only analysis tools and feed results back into the next generation round
 
 This keeps iterative loops cheaper and faster while reserving the expensive model for the main exploit-writing step.
+
+Local tool layer:
+
+- The model can request a small allowlisted set of read-only tools
+- The model can also request a small allowlisted set of read-only local commands
+- If `PWNGPT_ALLOW_UNSAFE_MODEL_COMMANDS=true`, the model can also request arbitrary local shell commands
+- The pipeline executes them locally and stores the outputs in artifacts
+- The next generation round receives those tool results as extra input
+
+Current allowlisted tools:
+
+- `symbol_disasm(symbol)`
+- `gadget_search(needle)`
+- `strings_search(pattern)`
+- `readelf_symbols(pattern)`
+- `readelf_sections()`
+
+Current allowlisted commands:
+
+- `file_info()`
+- `ldd()`
+- `objdump_disasm()`
+- `ropgadget()`
+- `nm_symbols()`
+
+Unsafe mode:
+
+- Set `PWNGPT_ALLOW_UNSAFE_MODEL_COMMANDS=true` to let the model request arbitrary local shell commands
+- CLI override: `--unsafe-model-commands`
+- When enabled, tool planning may emit `shell_requests`
+- Shell outputs are stored in `ToolResults.json` and fed back into the next round
 
 ## 6. Build Toy Challenges
 
@@ -151,10 +184,15 @@ Downloaded public binaries are already placed in `challenges/bin/`:
 - `rop_callme`
 - `rop_write4`
 - `rop_badchars`
+- `rop_fluff`
+- `rop_pivot`
+- `rop_ret2csu`
 
 Their manifest is:
 
 - `challenges/manifest_rop.json`
+- `challenges/manifest_rop_extra.json`
+- `challenges/manifest_rop_all.json`
 
 Source links are recorded in:
 
@@ -198,7 +236,19 @@ wsl bash -lc "cd '$REPO_ROOT_WSL' && source .venv/bin/activate && python3 -m pwn
 wsl bash -lc "cd '$REPO_ROOT_WSL' && source .venv/bin/activate && python3 -m pwngpt_pipeline.cli --max-iterations 3 --max-inner-rounds 4 eval --manifest challenges/manifest_rop.json"
 ```
 
-### 8.6 Batch eval on all listed challenges
+### 8.6 Batch eval on harder downloaded public set
+
+```powershell
+wsl bash -lc "cd '$REPO_ROOT_WSL' && source .venv/bin/activate && python3 -m pwngpt_pipeline.cli --unsafe-model-commands --max-iterations 3 --max-inner-rounds 4 eval --manifest challenges/manifest_rop_extra.json"
+```
+
+### 8.7 Batch eval on all downloaded public ROP challenges
+
+```powershell
+wsl bash -lc "cd '$REPO_ROOT_WSL' && source .venv/bin/activate && python3 -m pwngpt_pipeline.cli --unsafe-model-commands --max-iterations 3 --max-inner-rounds 4 eval --manifest challenges/manifest_rop_all.json"
+```
+
+### 8.8 Batch eval on all listed challenges
 
 ```powershell
 wsl bash -lc "cd '$REPO_ROOT_WSL' && source .venv/bin/activate && python3 -m pwngpt_pipeline.cli --max-iterations 3 --max-inner-rounds 4 eval --manifest challenges/manifest.json"
@@ -236,6 +286,9 @@ Each run writes to `artifacts/<binary>_<timestamp>/`:
 - `attempt_XX/exploit.py`
 - `attempt_XX/VerificationResult.json`
 - `attempt_XX/round_YY/...` for deeper intra-attempt revisions
+- `attempt_XX/ToolPlan.json`
+- `attempt_XX/ToolResults.json`
+- `attempt_XX/ToolResults.txt`
 - `run_summary.json`
 
 Read `run_summary.json` first. If a run fails, inspect `attempt_01/VerificationResult.json` and `attempt_01/exploit.py`.
@@ -262,6 +315,13 @@ Check these fields:
 - `OPENAI_COMPAT_API_KEY`
 - `OPENAI_COMPAT_MODEL`
 - `REFLECTION_OPENAI_COMPAT_MODEL`
+
+If your OpenAI-compatible proxy routes to Anthropic or Claude models, some backends reject requests that specify both `temperature` and `top_p`.
+
+The current client now handles this automatically:
+
+- Anthropic/Claude via OpenAI-compatible: sends only `temperature`
+- Gemini: unchanged, still sends both `temperature` and `top_p`
 
 ### `ModuleNotFoundError: No module named 'pwn'`
 

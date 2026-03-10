@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 
-from .llm_client import LLMClient
+from .llm_client import LLMClient, LLMError
 from .prompting import (
     build_format_repair_prompt,
     build_generation_prompt,
     build_reflection_prompt,
+    build_tool_request_prompt,
 )
 from .schemas import GenerationResult
 
@@ -37,6 +39,7 @@ class ExploitGenerator:
         attempt_history: list[dict] | None = None,
         previous_code: str = "",
         reflection_text: str = "",
+        tool_results_text: str = "",
     ) -> GenerationResult:
         prompt = build_generation_prompt(
             analysis=analysis,
@@ -46,6 +49,7 @@ class ExploitGenerator:
             attempt_history=attempt_history,
             previous_code=previous_code,
             reflection_text=reflection_text,
+            tool_results_text=tool_results_text,
             template_path=self.prompt_template_path,
         )
         raw = self.client.generate_text(prompt, purpose="primary").text
@@ -98,8 +102,54 @@ class ExploitGenerator:
             feedback=feedback,
             previous_code=previous_code,
             attempt_history=attempt_history,
+            allow_unsafe_commands=self.client.config.allow_unsafe_model_commands,
         )
-        return self.client.generate_text(prompt, purpose="reflection").text
+        try:
+            return self.client.generate_text(prompt, purpose="reflection").text
+        except LLMError as exc:
+            return f"<reflection unavailable: {exc}>"
+
+    def plan_tools(
+        self,
+        analysis: dict,
+        attempt: int,
+        feedback: dict,
+        previous_code: str,
+        reflection_text: str,
+        attempt_history: list[dict] | None = None,
+        previous_tool_results: str = "",
+    ) -> dict:
+        prompt = build_tool_request_prompt(
+            analysis=analysis,
+            attempt=attempt,
+            feedback=feedback,
+            previous_code=previous_code,
+            reflection_text=reflection_text,
+            attempt_history=attempt_history,
+            previous_tool_results=previous_tool_results,
+            allow_unsafe_commands=self.client.config.allow_unsafe_model_commands,
+        )
+        try:
+            raw = self.client.generate_text(prompt, purpose="reflection").text
+        except LLMError as exc:
+            return {
+                "tool_requests": [],
+                "command_requests": [],
+                "shell_requests": [],
+                "why": f"tool planning unavailable: {exc}",
+                "raw_text": "",
+            }
+
+        try:
+            return parse_tool_plan(raw)
+        except GenerationParseError as exc:
+            return {
+                "tool_requests": [],
+                "command_requests": [],
+                "shell_requests": [],
+                "why": f"tool planning parse failed: {exc}",
+                "raw_text": raw,
+            }
 
 
 def parse_model_output(text: str, strict: bool = True) -> ParsedSections:
@@ -153,3 +203,62 @@ def _parse_relaxed(text: str) -> ParsedSections:
     strategy = before or "No explicit strategy provided."
     success_conditions = after or "Look for WIN / FLAG markers in target output."
     return ParsedSections(strategy=strategy, code=code, success_conditions=success_conditions)
+
+
+def parse_tool_plan(text: str) -> dict:
+    json_blob = _extract_json_blob(text)
+    try:
+        payload = json.loads(json_blob)
+    except json.JSONDecodeError as exc:
+        raise GenerationParseError(f"Tool plan is not valid JSON: {exc}") from exc
+
+    tool_requests = payload.get("tool_requests", payload.get("requests", []))
+    command_requests = payload.get("command_requests", [])
+    if not isinstance(tool_requests, list):
+        raise GenerationParseError("Tool plan tool_requests must be a list.")
+    if not isinstance(command_requests, list):
+        raise GenerationParseError("Tool plan command_requests must be a list.")
+    sanitized_tools = []
+    for item in tool_requests[:3]:
+        if not isinstance(item, dict):
+            continue
+        tool = str(item.get("tool", "")).strip()
+        args = item.get("args", {})
+        if tool:
+            sanitized_tools.append({"tool": tool, "args": args if isinstance(args, dict) else {}})
+    sanitized_commands = []
+    for item in command_requests[:2]:
+        if not isinstance(item, dict):
+            continue
+        command = str(item.get("command", "")).strip()
+        args = item.get("args", {})
+        if command:
+            sanitized_commands.append(
+                {"command": command, "args": args if isinstance(args, dict) else {}}
+            )
+    sanitized_shells = []
+    for item in payload.get("shell_requests", [])[:2] if isinstance(payload.get("shell_requests", []), list) else []:
+        if isinstance(item, dict):
+            command = str(item.get("command", "")).strip()
+            if command:
+                sanitized_shells.append({"command": command})
+        elif isinstance(item, str) and item.strip():
+            sanitized_shells.append({"command": item.strip()})
+
+    return {
+        "tool_requests": sanitized_tools,
+        "command_requests": sanitized_commands,
+        "shell_requests": sanitized_shells,
+        "why": str(payload.get("why", "")).strip(),
+        "raw_text": text,
+    }
+
+
+def _extract_json_blob(text: str) -> str:
+    fenced = re.search(r"```(?:json)?\s*(\{.*\})\s*```", text, re.DOTALL)
+    if fenced:
+        return fenced.group(1)
+    direct = re.search(r"(\{.*\})", text, re.DOTALL)
+    if direct:
+        return direct.group(1)
+    raise GenerationParseError("No JSON object found in tool plan response.")

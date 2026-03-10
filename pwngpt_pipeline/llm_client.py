@@ -97,10 +97,9 @@ class LLMClient:
         payload = {
             "model": model,
             "messages": messages,
-            "temperature": self.config.temperature,
-            "top_p": self.config.top_p,
             "max_tokens": self.config.max_output_tokens,
         }
+        payload.update(self._openai_sampling_payload(model))
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
@@ -113,6 +112,15 @@ class LLMClient:
             extractor=self._extract_openai_compatible_text,
             provider_name="OpenAI-compatible",
         )
+
+    def _openai_sampling_payload(self, model: str) -> dict:
+        normalized = model.strip().lower()
+        if "anthropic" in normalized or "claude" in normalized:
+            return {"temperature": self.config.temperature}
+        return {
+            "temperature": self.config.temperature,
+            "top_p": self.config.top_p,
+        }
 
     def _post_with_retry(
         self,
