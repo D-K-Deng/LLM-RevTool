@@ -4,7 +4,11 @@ import re
 from dataclasses import dataclass
 
 from .llm_client import LLMClient
-from .prompting import build_format_repair_prompt, build_generation_prompt
+from .prompting import (
+    build_format_repair_prompt,
+    build_generation_prompt,
+    build_reflection_prompt,
+)
 from .schemas import GenerationResult
 
 
@@ -30,15 +34,21 @@ class ExploitGenerator:
         attempt: int,
         feedback: dict,
         strict_output: bool = True,
+        attempt_history: list[dict] | None = None,
+        previous_code: str = "",
+        reflection_text: str = "",
     ) -> GenerationResult:
         prompt = build_generation_prompt(
             analysis=analysis,
             attempt=attempt,
             feedback=feedback,
             strict_output=strict_output,
+            attempt_history=attempt_history,
+            previous_code=previous_code,
+            reflection_text=reflection_text,
             template_path=self.prompt_template_path,
         )
-        raw = self.client.generate_text(prompt).text
+        raw = self.client.generate_text(prompt, purpose="primary").text
 
         try:
             parsed = parse_model_output(raw, strict=strict_output)
@@ -48,13 +58,14 @@ class ExploitGenerator:
                 success_conditions=parsed.success_conditions,
                 raw_text=raw,
                 used_format_repair=False,
+                reflection_summary=reflection_text,
             )
         except GenerationParseError:
             if not strict_output:
                 raise
 
         repair_prompt = build_format_repair_prompt(raw)
-        repaired = self.client.generate_text(repair_prompt).text
+        repaired = self.client.generate_text(repair_prompt, purpose="format_repair").text
         parsed = parse_model_output(repaired, strict=True)
         return GenerationResult(
             strategy=parsed.strategy,
@@ -62,7 +73,25 @@ class ExploitGenerator:
             success_conditions=parsed.success_conditions,
             raw_text=repaired,
             used_format_repair=True,
+            reflection_summary=reflection_text,
         )
+
+    def reflect(
+        self,
+        analysis: dict,
+        attempt: int,
+        feedback: dict,
+        previous_code: str,
+        attempt_history: list[dict] | None = None,
+    ) -> str:
+        prompt = build_reflection_prompt(
+            analysis=analysis,
+            attempt=attempt,
+            feedback=feedback,
+            previous_code=previous_code,
+            attempt_history=attempt_history,
+        )
+        return self.client.generate_text(prompt, purpose="reflection").text
 
 
 def parse_model_output(text: str, strict: bool = True) -> ParsedSections:

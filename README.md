@@ -83,21 +83,36 @@ Copy-Item .env.example .env
 Edit `.env`:
 
 - `LLM_PROVIDER=gemini` or `LLM_PROVIDER=openai_compatible`
+- `REFLECTION_LLM_PROVIDER=gemini` or `REFLECTION_LLM_PROVIDER=openai_compatible`
 - `GEMINI_API_KEY=...`
 - `GEMINI_MODEL=gemini-2.5-pro`
+- `REFLECTION_GEMINI_MODEL=gemini-2.5-flash`
 
 Recommended model values:
 
 - `gemini-2.5-pro`
+- `gemini-2.5-flash`
 - `gemini-3-flash-preview`
+
+Recommended setup:
+
+- Use the stronger model for exploit generation
+- Use a cheaper, faster model for reflection and format repair
+
+Default split used by `.env.example`:
+
+- primary Gemini: `gemini-2.5-pro`
+- reflection Gemini: `gemini-2.5-flash`
 
 Example Dartmouth OpenAI-compatible config:
 
 ```env
 LLM_PROVIDER=openai_compatible
+REFLECTION_LLM_PROVIDER=openai_compatible
 OPENAI_COMPAT_BASE_URL=https://llm-proxy.dartmouth.edu
 OPENAI_COMPAT_API_KEY=YOUR_VIRTUAL_KEY_GOES_HERE
-OPENAI_COMPAT_MODEL=gpt-4.1-mini
+OPENAI_COMPAT_MODEL=gpt-5.4-2026-03-05
+REFLECTION_OPENAI_COMPAT_MODEL=gpt-4.1-mini
 ```
 
 The OpenAI-compatible client assumes the endpoint is:
@@ -107,6 +122,13 @@ The OpenAI-compatible client assumes the endpoint is:
 ```
 
 If Dartmouth exposes a different model name on your account, change `OPENAI_COMPAT_MODEL`.
+
+How the pipeline uses the two models:
+
+- Primary model: exploit generation
+- Reflection model: failure diagnosis, revision hints, and format repair
+
+This keeps iterative loops cheaper and faster while reserving the expensive model for the main exploit-writing step.
 
 ## 6. Build Toy Challenges
 
@@ -230,9 +252,11 @@ Use an actual API model ID, for example:
 Check these fields:
 
 - `LLM_PROVIDER=openai_compatible`
+- `REFLECTION_LLM_PROVIDER=openai_compatible` if you also want cheap reflections through the same proxy
 - `OPENAI_COMPAT_BASE_URL`
 - `OPENAI_COMPAT_API_KEY`
 - `OPENAI_COMPAT_MODEL`
+- `REFLECTION_OPENAI_COMPAT_MODEL`
 
 ### `ModuleNotFoundError: No module named 'pwn'`
 

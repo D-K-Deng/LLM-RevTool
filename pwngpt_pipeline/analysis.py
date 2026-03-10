@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from .helper_insights import build_helper_insights
 from .schemas import AnalysisReport
 from .utils import command_exists, run_command, utc_timestamp
 
@@ -63,6 +64,15 @@ class BinaryAnalyzer:
             notes.append("objdump unavailable or failed; context may be incomplete.")
         if readelf_s.returncode != 0:
             notes.append("readelf symbol extraction failed; imports/exports may be incomplete.")
+        helper_insights = build_helper_insights(
+            binary_name=binary_path.name,
+            architecture=architecture,
+            imports=imports,
+            exports=exports,
+            interesting_strings=interesting_strings,
+            pruned_context=pruned_context,
+            protections=protections,
+        )
 
         return AnalysisReport(
             binary_path=str(binary_path),
@@ -76,6 +86,7 @@ class BinaryAnalyzer:
             entry_points=entry_points,
             suspected_vulns=suspected_vulns,
             pruned_context=pruned_context,
+            helper_insights=helper_insights,
             notes=notes,
         )
 

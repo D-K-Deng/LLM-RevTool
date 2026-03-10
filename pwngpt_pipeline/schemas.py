@@ -17,6 +17,7 @@ class AnalysisReport:
     entry_points: dict[str, Any] = field(default_factory=dict)
     suspected_vulns: list[dict[str, str]] = field(default_factory=list)
     pruned_context: list[dict[str, str]] = field(default_factory=list)
+    helper_insights: dict[str, Any] = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -30,6 +31,7 @@ class GenerationResult:
     success_conditions: str
     raw_text: str
     used_format_repair: bool = False
+    reflection_summary: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

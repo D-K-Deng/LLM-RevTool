@@ -18,6 +18,20 @@ Hard constraints:
 9) Print useful debug lines.
 10) Prefer robust exploit logic over brittle assumptions.
 11) If uncertain, still output your best executable attempt.
+12) The exploit must actually execute the target and print the resulting process output. Do not only build or return a payload.
+13) If the challenge matches a known family, follow the helper playbook instead of improvising.
+
+Helper playbook:
+{playbook_text}
+
+Attempt history JSON:
+{attempt_history_json}
+
+Previous exploit code:
+{previous_code}
+
+Reflection summary:
+{reflection_text}
 
 Input JSON:
 {analysis_json}

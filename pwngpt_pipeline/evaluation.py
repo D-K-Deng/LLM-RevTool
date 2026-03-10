@@ -32,6 +32,7 @@ def run_evaluation(
         binary = _resolve_manifest_binary_path(Path(item["binary"]), manifest_path)
         ensure_executable(binary)
         success_regex = item.get("success_regex")
+        print(f"[eval] solving {name}", flush=True)
 
         summary = orchestrator.solve(
             binary_path=binary,
@@ -51,6 +52,12 @@ def run_evaluation(
             "last_error": summary["last_error"],
         }
         rows.append(row)
+        status = "SOLVED" if row["solved"] else "FAILED"
+        print(
+            f"[eval] {name}: {status} "
+            f"(attempts={row['attempts_used']}, success_attempt={row['success_attempt']})",
+            flush=True,
+        )
 
     solved_count = sum(1 for r in rows if r["solved"])
     attempts_for_success = [r["success_attempt"] for r in rows if r["solved"] and r["success_attempt"] > 0]
@@ -68,6 +75,11 @@ def run_evaluation(
         else None,
         "rows": rows,
     }
+    print(
+        f"[eval] done: solved {solved_count}/{len(rows)} "
+        f"(success_rate={summary_payload['success_rate']:.3f})",
+        flush=True,
+    )
 
     write_json(eval_dir / "evaluation_summary.json", summary_payload)
     _write_csv(eval_dir / "evaluation_results.csv", rows)

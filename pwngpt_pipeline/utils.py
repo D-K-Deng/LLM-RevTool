@@ -55,14 +55,18 @@ def run_command(
 
 def write_json(path: Path, payload: dict) -> None:
     ensure_dir(path.parent)
-    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    path.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False, default=_json_default),
+        encoding="utf-8",
+    )
 
 
 def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def tail_text(text: str, max_chars: int = 2000) -> str:
+def tail_text(text: str | bytes, max_chars: int = 2000) -> str:
+    text = ensure_text(text)
     if len(text) <= max_chars:
         return text
     return text[-max_chars:]
@@ -87,3 +91,17 @@ def ensure_executable(path: Path) -> bool:
         return False
     path.chmod(mode | stat.S_IXUSR)
     return True
+
+
+def ensure_text(value: str | bytes | None) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return value
+
+
+def _json_default(obj):
+    if isinstance(obj, bytes):
+        return obj.decode("utf-8", errors="replace")
+    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")

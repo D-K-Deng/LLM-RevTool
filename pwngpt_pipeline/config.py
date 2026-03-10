@@ -10,11 +10,14 @@ from typing import Optional
 @dataclass
 class PipelineConfig:
     llm_provider: str = "gemini"
+    reflection_llm_provider: str = ""
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.1-pro"
+    reflection_gemini_model: str = ""
     openai_compat_base_url: str = ""
     openai_compat_api_key: str = ""
     openai_compat_model: str = ""
+    reflection_openai_compat_model: str = ""
     request_timeout_s: int = 60
     max_retries: int = 6
     retry_base_delay_s: float = 1.0
@@ -22,7 +25,7 @@ class PipelineConfig:
     temperature: float = 0.2
     top_p: float = 0.95
     max_output_tokens: int = 4096
-    max_iterations: int = 5
+    max_iterations: int = 6
     verification_timeout_s: int = 20
     python_executable: str = sys.executable
     artifact_root: Path = Path("artifacts")
@@ -39,11 +42,14 @@ class PipelineConfig:
         python_executable = _detect_preferred_python()
         cfg = cls(
             llm_provider=os.getenv("LLM_PROVIDER", "gemini").strip().lower(),
+            reflection_llm_provider=os.getenv("REFLECTION_LLM_PROVIDER", "").strip().lower(),
             gemini_api_key=os.getenv("GEMINI_API_KEY", "").strip(),
             gemini_model=os.getenv("GEMINI_MODEL", "gemini-3.1-pro").strip(),
+            reflection_gemini_model=os.getenv("REFLECTION_GEMINI_MODEL", "").strip(),
             openai_compat_base_url=os.getenv("OPENAI_COMPAT_BASE_URL", "").strip(),
             openai_compat_api_key=os.getenv("OPENAI_COMPAT_API_KEY", "").strip(),
             openai_compat_model=os.getenv("OPENAI_COMPAT_MODEL", "").strip(),
+            reflection_openai_compat_model=os.getenv("REFLECTION_OPENAI_COMPAT_MODEL", "").strip(),
             python_executable=python_executable,
             artifact_root=Path(artifact_root),
         )
@@ -52,11 +58,14 @@ class PipelineConfig:
     def with_overrides(
         self,
         llm_provider: Optional[str] = None,
+        reflection_llm_provider: Optional[str] = None,
         gemini_api_key: Optional[str] = None,
         gemini_model: Optional[str] = None,
+        reflection_gemini_model: Optional[str] = None,
         openai_compat_base_url: Optional[str] = None,
         openai_compat_api_key: Optional[str] = None,
         openai_compat_model: Optional[str] = None,
+        reflection_openai_compat_model: Optional[str] = None,
         max_iterations: Optional[int] = None,
         max_retries: Optional[int] = None,
         strict_output: Optional[bool] = None,
@@ -66,16 +75,22 @@ class PipelineConfig:
     ) -> "PipelineConfig":
         if llm_provider is not None:
             self.llm_provider = llm_provider.strip().lower()
+        if reflection_llm_provider is not None:
+            self.reflection_llm_provider = reflection_llm_provider.strip().lower()
         if gemini_api_key is not None:
             self.gemini_api_key = gemini_api_key
         if gemini_model is not None:
             self.gemini_model = gemini_model
+        if reflection_gemini_model is not None:
+            self.reflection_gemini_model = reflection_gemini_model
         if openai_compat_base_url is not None:
             self.openai_compat_base_url = openai_compat_base_url
         if openai_compat_api_key is not None:
             self.openai_compat_api_key = openai_compat_api_key
         if openai_compat_model is not None:
             self.openai_compat_model = openai_compat_model
+        if reflection_openai_compat_model is not None:
+            self.reflection_openai_compat_model = reflection_openai_compat_model
         if max_iterations is not None:
             self.max_iterations = max_iterations
         if max_retries is not None:

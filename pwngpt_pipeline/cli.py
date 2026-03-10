@@ -14,8 +14,18 @@ from .utils import ensure_dir, write_json
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Local PwnGPT-style AEG pipeline")
     parser.add_argument("--provider", default=None, help="LLM provider override")
+    parser.add_argument(
+        "--reflection-provider",
+        default=None,
+        help="Reflection/repair LLM provider override",
+    )
     parser.add_argument("--api-key", default=None, help="Gemini API key override")
     parser.add_argument("--model", default=None, help="Gemini model override")
+    parser.add_argument(
+        "--reflection-model",
+        default=None,
+        help="Reflection/repair Gemini model override",
+    )
     parser.add_argument("--base-url", default=None, help="OpenAI-compatible base URL override")
     parser.add_argument(
         "--openai-api-key",
@@ -26,6 +36,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--openai-model",
         default=None,
         help="OpenAI-compatible model override",
+    )
+    parser.add_argument(
+        "--reflection-openai-model",
+        default=None,
+        help="Reflection/repair OpenAI-compatible model override",
     )
     parser.add_argument("--artifact-root", default=None, help="Artifacts root directory")
     parser.add_argument("--max-retries", type=int, default=None, help="Gemini max retries")
@@ -81,11 +96,14 @@ def build_config(args: argparse.Namespace) -> PipelineConfig:
     artifact_root = Path(args.artifact_root) if args.artifact_root else None
     cfg.with_overrides(
         llm_provider=args.provider,
+        reflection_llm_provider=args.reflection_provider,
         gemini_api_key=args.api_key,
         gemini_model=args.model,
+        reflection_gemini_model=args.reflection_model,
         openai_compat_base_url=args.base_url,
         openai_compat_api_key=args.openai_api_key,
         openai_compat_model=args.openai_model,
+        reflection_openai_compat_model=args.reflection_openai_model,
         max_iterations=args.max_iterations,
         max_retries=args.max_retries,
         strict_output=not args.relaxed_output,

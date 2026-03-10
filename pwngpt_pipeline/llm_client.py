@@ -25,37 +25,43 @@ class LLMResponse:
 class LLMClient:
     def __init__(self, config: PipelineConfig) -> None:
         self.config = config
-        provider = self.config.llm_provider
+        self._validate_profile(self._profile_for_purpose("primary"))
+        reflection_profile = self._profile_for_purpose("reflection")
+        if reflection_profile != self._profile_for_purpose("primary"):
+            self._validate_profile(reflection_profile)
+
+    def generate_text(
+        self,
+        prompt: str,
+        system_instruction: str = "",
+        purpose: str = "primary",
+    ) -> LLMResponse:
+        profile = self._profile_for_purpose(purpose)
+        provider = profile["provider"]
         if provider == "gemini":
-            if not self.config.gemini_api_key:
-                raise LLMError("Missing GEMINI_API_KEY for provider=gemini.")
-            if not self.config.gemini_model:
-                raise LLMError("Missing GEMINI_MODEL for provider=gemini.")
-            return
+            return self._generate_gemini(prompt, system_instruction, profile["model"], profile["api_key"])
         if provider in {"openai_compatible", "openai-compat", "dartmouth"}:
-            if not self.config.openai_compat_api_key:
-                raise LLMError("Missing OPENAI_COMPAT_API_KEY for provider=openai_compatible.")
-            if not self.config.openai_compat_base_url:
-                raise LLMError("Missing OPENAI_COMPAT_BASE_URL for provider=openai_compatible.")
-            if not self.config.openai_compat_model:
-                raise LLMError("Missing OPENAI_COMPAT_MODEL for provider=openai_compatible.")
-            return
+            return self._generate_openai_compatible(
+                prompt,
+                system_instruction,
+                profile["base_url"],
+                profile["api_key"],
+                profile["model"],
+            )
         raise LLMError(f"Unsupported LLM provider: {provider}")
 
-    def generate_text(self, prompt: str, system_instruction: str = "") -> LLMResponse:
-        provider = self.config.llm_provider
-        if provider == "gemini":
-            return self._generate_gemini(prompt, system_instruction)
-        if provider in {"openai_compatible", "openai-compat", "dartmouth"}:
-            return self._generate_openai_compatible(prompt, system_instruction)
-        raise LLMError(f"Unsupported LLM provider: {provider}")
-
-    def _generate_gemini(self, prompt: str, system_instruction: str) -> LLMResponse:
+    def _generate_gemini(
+        self,
+        prompt: str,
+        system_instruction: str,
+        model: str,
+        api_key: str,
+    ) -> LLMResponse:
         endpoint = (
             f"https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{self.config.gemini_model}:generateContent"
+            f"{model}:generateContent"
         )
-        params = {"key": self.config.gemini_api_key}
+        params = {"key": api_key}
         payload = {
             "contents": [{"role": "user", "parts": [{"text": prompt}]}],
             "generationConfig": {
@@ -75,21 +81,28 @@ class LLMClient:
             provider_name="Gemini",
         )
 
-    def _generate_openai_compatible(self, prompt: str, system_instruction: str) -> LLMResponse:
-        endpoint = self.config.openai_compat_base_url.rstrip("/") + "/v1/chat/completions"
+    def _generate_openai_compatible(
+        self,
+        prompt: str,
+        system_instruction: str,
+        base_url: str,
+        api_key: str,
+        model: str,
+    ) -> LLMResponse:
+        endpoint = base_url.rstrip("/") + "/v1/chat/completions"
         messages = []
         if system_instruction.strip():
             messages.append({"role": "system", "content": system_instruction})
         messages.append({"role": "user", "content": prompt})
         payload = {
-            "model": self.config.openai_compat_model,
+            "model": model,
             "messages": messages,
             "temperature": self.config.temperature,
             "top_p": self.config.top_p,
             "max_tokens": self.config.max_output_tokens,
         }
         headers = {
-            "Authorization": f"Bearer {self.config.openai_compat_api_key}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
         return self._post_with_retry(
@@ -190,3 +203,55 @@ class LLMClient:
                     texts.append(item.get("text", ""))
             return "\n".join(texts).strip()
         return ""
+
+    def _profile_for_purpose(self, purpose: str) -> dict:
+        if purpose in {"reflection", "format_repair"}:
+            provider = self.config.reflection_llm_provider or self.config.llm_provider
+            provider = provider.strip().lower()
+            if provider == "gemini":
+                return {
+                    "provider": provider,
+                    "model": self.config.reflection_gemini_model or self.config.gemini_model,
+                    "api_key": self.config.gemini_api_key,
+                }
+            if provider in {"openai_compatible", "openai-compat", "dartmouth"}:
+                return {
+                    "provider": provider,
+                    "base_url": self.config.openai_compat_base_url,
+                    "api_key": self.config.openai_compat_api_key,
+                    "model": self.config.reflection_openai_compat_model or self.config.openai_compat_model,
+                }
+        provider = self.config.llm_provider
+        if provider == "gemini":
+            return {
+                "provider": provider,
+                "model": self.config.gemini_model,
+                "api_key": self.config.gemini_api_key,
+            }
+        if provider in {"openai_compatible", "openai-compat", "dartmouth"}:
+            return {
+                "provider": provider,
+                "base_url": self.config.openai_compat_base_url,
+                "api_key": self.config.openai_compat_api_key,
+                "model": self.config.openai_compat_model,
+            }
+        return {"provider": provider}
+
+    @staticmethod
+    def _validate_profile(profile: dict) -> None:
+        provider = profile["provider"]
+        if provider == "gemini":
+            if not profile.get("api_key"):
+                raise LLMError("Missing GEMINI_API_KEY for gemini provider.")
+            if not profile.get("model"):
+                raise LLMError("Missing Gemini model for selected purpose.")
+            return
+        if provider in {"openai_compatible", "openai-compat", "dartmouth"}:
+            if not profile.get("api_key"):
+                raise LLMError("Missing OPENAI_COMPAT_API_KEY for openai-compatible provider.")
+            if not profile.get("base_url"):
+                raise LLMError("Missing OPENAI_COMPAT_BASE_URL for openai-compatible provider.")
+            if not profile.get("model"):
+                raise LLMError("Missing OpenAI-compatible model for selected purpose.")
+            return
+        raise LLMError(f"Unsupported LLM provider: {provider}")

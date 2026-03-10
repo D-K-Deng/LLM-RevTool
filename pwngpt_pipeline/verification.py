@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .config import PipelineConfig
 from .schemas import VerificationResult
-from .utils import tail_text
+from .utils import ensure_text, tail_text
 
 
 class ExploitVerifier:
@@ -25,6 +25,7 @@ class ExploitVerifier:
         patterns = [re.compile(p) for p in (success_regex or self.config.success_regex)]
         env = os.environ.copy()
         env["TARGET_BINARY"] = str(binary_path.resolve())
+        _augment_runtime_library_path(env, binary_path)
 
         cmd = [
             self.config.python_executable,
@@ -37,23 +38,24 @@ class ExploitVerifier:
         exit_code = None
         sig = None
         try:
+            runtime_cwd = _runtime_workdir_for_binary(binary_path)
             proc = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=self.config.verification_timeout_s,
                 env=env,
-                cwd=str(binary_path.resolve().parent),
+                cwd=str(runtime_cwd),
             )
-            stdout = proc.stdout
-            stderr = proc.stderr
+            stdout = ensure_text(proc.stdout)
+            stderr = ensure_text(proc.stderr)
             exit_code = proc.returncode
             if exit_code is not None and exit_code < 0:
                 sig = -exit_code
         except subprocess.TimeoutExpired as exc:
             timed_out = True
-            stdout = exc.stdout or ""
-            stderr = (exc.stderr or "") + "\n[timeout]"
+            stdout = ensure_text(exc.stdout)
+            stderr = ensure_text(exc.stderr) + "\n[timeout]"
 
         combined = f"{stdout}\n{stderr}"
         matched = any(p.search(combined) for p in patterns)
@@ -115,3 +117,28 @@ class ExploitVerifier:
             failure_reason=failure_reason,
             feedback_payload=feedback_payload,
         )
+
+
+def _augment_runtime_library_path(env: dict[str, str], binary_path: Path) -> None:
+    binary_dir = binary_path.resolve().parent
+    candidate_dirs = [binary_dir]
+
+    project_root = binary_dir.parent.parent
+    download_subdir = project_root / "challenges" / "downloads" / binary_path.name.removeprefix("rop_")
+    if download_subdir.exists():
+        candidate_dirs.append(download_subdir)
+
+    existing = env.get("LD_LIBRARY_PATH", "")
+    pieces = [str(path) for path in candidate_dirs if path.exists()]
+    if existing:
+        pieces.append(existing)
+    env["LD_LIBRARY_PATH"] = ":".join(pieces)
+
+
+def _runtime_workdir_for_binary(binary_path: Path) -> Path:
+    binary_dir = binary_path.resolve().parent
+    project_root = binary_dir.parent.parent
+    download_subdir = project_root / "challenges" / "downloads" / binary_path.name.removeprefix("rop_")
+    if download_subdir.exists():
+        return download_subdir
+    return binary_dir
