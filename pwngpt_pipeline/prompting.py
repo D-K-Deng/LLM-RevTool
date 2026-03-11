@@ -28,14 +28,21 @@ def _default_generation_prompt() -> str:
         4) Use argparse and accept binary path from argv[1] or --binary.
         4a) The verifier will invoke the script with the binary path as argv[1]. You must use that path.
         4b) Do NOT hardcode paths like ./chall, ./branch_puzzle, /tmp/..., or remote host placeholders.
-        5) Prefer Python standard library only (`subprocess`, `socket`, `struct`, `time`, `re`, `pathlib`).
-        6) Do NOT use `pwntools` unless the feedback explicitly says it is installed and required.
+        5) For simple stdin/stdout tasks, prefer Python standard library (`subprocess`, `socket`, `struct`, `time`, `re`, `pathlib`).
+        6) `pwntools` is installed in this environment. For nontrivial ROP tasks, prefer `pwntools` (`ELF`, `ROP`, `process`, `p64`, `u64`) over ad-hoc parsing.
         7) If the task is simple input/output, use `subprocess.Popen(..., stdin=PIPE, stdout=PIPE, stderr=PIPE, text=False)`.
         8) Do not include TODO placeholders like CORRECT_CODE_HERE; infer concrete values from the analysis JSON.
         9) Do not include markdown outside the required section text.
         10) Keep script self-contained with clear runtime checks.
         11) The exploit must actually execute the target and print the resulting process output. Do not just build or return a payload.
-        12) If the binary is a known challenge family (ret2win/split/callme/write4/badchars), follow the class-specific playbook.
+        12) If the binary fits a known family (branch/input, simple ROP, constrained write, stack pivot, ret2csu-style dispatcher), follow the playbook evidence instead of improvising.
+        13) Use this exact runtime skeleton shape unless there is a strong reason not to:
+            - parse argv / --binary with argparse
+            - create a local process for the provided binary path
+            - send payload / interact
+            - collect output
+            - print output
+            - exit nonzero only on real failure
 
         Tips:
         - Use mitigations and function hints from analysis context.
@@ -44,6 +51,7 @@ def _default_generation_prompt() -> str:
         - Read the previous exploit and previous verifier output carefully before revising.
         - If exploit is uncertain, still produce your best executable attempt.
         - Print meaningful progress logs from the script.
+        - If concrete addresses, gadgets, relocations, writable sections, or runtime prompts are missing, request local tools/commands early instead of guessing.
 
         Helper playbook:
         {playbook_text}
@@ -248,6 +256,7 @@ def build_tool_request_prompt(
         - Do not request arbitrary shell commands, writes, networking, or unrelated filesystem access.
         {shell_rule}
         - If no tools/commands are needed, return {no_request_return}.
+        - For complex tasks, prefer requesting concrete gadget/symbol/disassembly evidence before proposing a chain.
 
         Helper playbook:
         {playbook_text}

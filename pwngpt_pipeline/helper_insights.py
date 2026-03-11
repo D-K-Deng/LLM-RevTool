@@ -57,6 +57,12 @@ def classify_challenge(
         return "write4"
     if lower_name == "rop_badchars" or ("print_file" in export_set and "xor    byte ptr [r15],r14b" in lower_context):
         return "badchars"
+    if lower_name == "rop_fluff":
+        return "fluff"
+    if lower_name == "rop_pivot":
+        return "pivot"
+    if lower_name == "rop_ret2csu":
+        return "ret2csu"
     if "say the course code:" in lower_strings or "strcmp@plt" in lower_context:
         return "branch_input"
     if "printf" in import_set and "%n" in lower_strings:
@@ -97,6 +103,21 @@ def recommended_methods_for_class(challenge_class: str) -> list[str]:
             "decode it in place using xor gadgets byte-by-byte",
             "then call print_file(pointer)",
         ],
+        "fluff": [
+            "this is a constrained write-what-where ROP task; use pwntools and inspect useful gadgets/functions first",
+            "recover how to load controlled values into registers from useful gadgets or helper functions",
+            "write flag.txt into writable memory, then call print_file(pointer)",
+        ],
+        "pivot": [
+            "this is a stack pivot challenge; use pwntools and inspect foothold_function, ret2win, and pivot gadgets",
+            "build a small first-stage chain on the stack that pivots into attacker-controlled heap memory",
+            "use the leaked pivot address from process output and resolve ret2win via foothold_function/GOT mechanics",
+        ],
+        "ret2csu": [
+            "this is a ret2csu challenge; use pwntools and inspect __libc_csu_init gadgets",
+            "find the two CSU gadgets that control rbx/rbp/r12/r13/r14/r15 and perform the indirect call",
+            "use the CSU sequence to set up arguments and call the target function deterministically",
+        ],
         "format_string": [
             "identify whether you need a leak, write, or both",
             "prefer deterministic payloads over blind guessing",
@@ -115,7 +136,7 @@ def prompt_warnings_for_class(challenge_class: str, protections: dict[str, Any])
         warnings.append("PIE is enabled; avoid hardcoding absolute code addresses unless you have a leak or non-PIE evidence.")
     if protections.get("canary") is True:
         warnings.append("Stack canary is enabled; simple stack smashing may fail unless the challenge design clearly bypasses it.")
-    if challenge_class in {"ret2win", "split", "callme", "write4", "badchars"}:
+    if challenge_class in {"ret2win", "split", "callme", "write4", "badchars", "fluff", "pivot", "ret2csu"}:
         warnings.append("This is a ROP-style challenge; a mere input string is not enough.")
     if challenge_class == "branch_input":
         warnings.append("This is likely not a memory-corruption exploit; send the exact expected input instead of crafting a payload.")
@@ -135,7 +156,7 @@ def extract_candidate_inputs(strings: list[str]) -> list[str]:
 
 
 def candidate_offsets_for_class(challenge_class: str, architecture: str, strings_blob: str) -> list[int]:
-    if architecture == "amd64" and challenge_class in {"ret2win", "split", "callme", "write4", "badchars"}:
+    if architecture == "amd64" and challenge_class in {"ret2win", "split", "callme", "write4", "badchars", "fluff", "pivot", "ret2csu"}:
         return [40, 32, 44, 48, 56]
     if challenge_class == "stack_overflow":
         return [40, 64, 72, 80]
@@ -148,7 +169,7 @@ def extract_candidate_symbols(exports: list[str], pruned_context: list[dict[str,
     candidates = []
     for symbol in exports:
         low = symbol.lower()
-        if any(token in low for token in ("win", "ret2win", "print_file", "callme", "system", "useful")):
+        if any(token in low for token in ("win", "ret2win", "print_file", "callme", "system", "useful", "foothold", "csu")):
             candidates.append(symbol)
     if candidates:
         return sorted(set(candidates))
@@ -156,7 +177,7 @@ def extract_candidate_symbols(exports: list[str], pruned_context: list[dict[str,
     context_blob = "\n".join(item.get("snippet", "") for item in pruned_context)
     for match in re.findall(r"<([^>]+)>:", context_blob):
         low = match.lower()
-        if any(token in low for token in ("win", "ret2win", "print_file", "callme", "system", "useful")):
+        if any(token in low for token in ("win", "ret2win", "print_file", "callme", "system", "useful", "foothold", "csu")):
             candidates.append(match)
     return sorted(set(candidates))
 

@@ -18,13 +18,15 @@ class PipelineConfig:
     openai_compat_api_key: str = ""
     openai_compat_model: str = ""
     reflection_openai_compat_model: str = ""
-    request_timeout_s: int = 60
+    request_timeout_s: int = 180
+    reflection_request_timeout_s: int = 60
     max_retries: int = 6
     retry_base_delay_s: float = 1.0
     retry_max_delay_s: float = 20.0
     temperature: float = 0.2
     top_p: float = 0.95
-    max_output_tokens: int = 4096
+    max_output_tokens: int = 8192
+    reflection_max_output_tokens: int = 2048
     max_iterations: int = 6
     max_inner_rounds_per_attempt: int = 4
     allow_unsafe_model_commands: bool = False
@@ -52,6 +54,10 @@ class PipelineConfig:
             openai_compat_api_key=os.getenv("OPENAI_COMPAT_API_KEY", "").strip(),
             openai_compat_model=os.getenv("OPENAI_COMPAT_MODEL", "").strip(),
             reflection_openai_compat_model=os.getenv("REFLECTION_OPENAI_COMPAT_MODEL", "").strip(),
+            request_timeout_s=int(os.getenv("PWNGPT_REQUEST_TIMEOUT_S", "180")),
+            reflection_request_timeout_s=int(os.getenv("PWNGPT_REFLECTION_REQUEST_TIMEOUT_S", "60")),
+            max_output_tokens=int(os.getenv("PWNGPT_MAX_OUTPUT_TOKENS", "8192")),
+            reflection_max_output_tokens=int(os.getenv("PWNGPT_REFLECTION_MAX_OUTPUT_TOKENS", "2048")),
             max_inner_rounds_per_attempt=int(os.getenv("PWNGPT_MAX_INNER_ROUNDS_PER_ATTEMPT", "4")),
             allow_unsafe_model_commands=_env_bool("PWNGPT_ALLOW_UNSAFE_MODEL_COMMANDS", False),
             python_executable=python_executable,
@@ -70,6 +76,10 @@ class PipelineConfig:
         openai_compat_api_key: Optional[str] = None,
         openai_compat_model: Optional[str] = None,
         reflection_openai_compat_model: Optional[str] = None,
+        request_timeout_s: Optional[int] = None,
+        reflection_request_timeout_s: Optional[int] = None,
+        max_output_tokens: Optional[int] = None,
+        reflection_max_output_tokens: Optional[int] = None,
         max_iterations: Optional[int] = None,
         max_inner_rounds_per_attempt: Optional[int] = None,
         allow_unsafe_model_commands: Optional[bool] = None,
@@ -97,6 +107,14 @@ class PipelineConfig:
             self.openai_compat_model = openai_compat_model
         if reflection_openai_compat_model is not None:
             self.reflection_openai_compat_model = reflection_openai_compat_model
+        if request_timeout_s is not None:
+            self.request_timeout_s = request_timeout_s
+        if reflection_request_timeout_s is not None:
+            self.reflection_request_timeout_s = reflection_request_timeout_s
+        if max_output_tokens is not None:
+            self.max_output_tokens = max_output_tokens
+        if reflection_max_output_tokens is not None:
+            self.reflection_max_output_tokens = reflection_max_output_tokens
         if max_iterations is not None:
             self.max_iterations = max_iterations
         if max_inner_rounds_per_attempt is not None:

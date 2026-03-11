@@ -11,8 +11,8 @@ Hard constraints:
 4) Accept binary path from argv and/or --binary.
 4a) The verifier passes the target binary path as argv[1]. Use it.
 4b) Do not hardcode paths like `./branch_puzzle`, `./chall`, or remote placeholders.
-5) Prefer Python standard library only (`subprocess`, `socket`, `struct`, `time`, `re`, `pathlib`).
-6) Do NOT use `pwntools` unless the feedback explicitly says it is installed and required.
+5) For simple stdin/stdout tasks, prefer Python standard library (`subprocess`, `socket`, `struct`, `time`, `re`, `pathlib`).
+6) `pwntools` is installed in this environment. For nontrivial ROP tasks, prefer `pwntools` (`ELF`, `ROP`, `process`, `p64`, `u64`) over ad-hoc parsing.
 7) For simple process interaction, use `subprocess.Popen` and send concrete bytes.
 8) Do not leave placeholders like `CORRECT_CODE_HERE`; infer exact values from analysis.
 9) Print useful debug lines.
@@ -21,6 +21,8 @@ Hard constraints:
 12) The exploit must actually execute the target and print the resulting process output. Do not only build or return a payload.
 13) If the challenge matches a known family, follow the helper playbook instead of improvising.
 14) If local tool results are provided below, use them as concrete evidence instead of guessing addresses/gadgets/symbols.
+15) Use this runtime skeleton unless there is a strong reason not to: argparse -> process(binary) -> send/interact -> recvall/communicate -> print output.
+16) If concrete addresses, gadgets, relocations, writable sections, or runtime prompts are missing, request local tools/commands early instead of guessing.
 
 Helper playbook:
 {playbook_text}

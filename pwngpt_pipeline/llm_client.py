@@ -39,7 +39,13 @@ class LLMClient:
         profile = self._profile_for_purpose(purpose)
         provider = profile["provider"]
         if provider == "gemini":
-            return self._generate_gemini(prompt, system_instruction, profile["model"], profile["api_key"])
+            return self._generate_gemini(
+                prompt,
+                system_instruction,
+                profile["model"],
+                profile["api_key"],
+                purpose,
+            )
         if provider in {"openai_compatible", "openai-compat", "dartmouth"}:
             return self._generate_openai_compatible(
                 prompt,
@@ -47,6 +53,7 @@ class LLMClient:
                 profile["base_url"],
                 profile["api_key"],
                 profile["model"],
+                purpose,
             )
         raise LLMError(f"Unsupported LLM provider: {provider}")
 
@@ -56,6 +63,7 @@ class LLMClient:
         system_instruction: str,
         model: str,
         api_key: str,
+        purpose: str,
     ) -> LLMResponse:
         endpoint = (
             f"https://generativelanguage.googleapis.com/v1beta/models/"
@@ -67,7 +75,7 @@ class LLMClient:
             "generationConfig": {
                 "temperature": self.config.temperature,
                 "topP": self.config.top_p,
-                "maxOutputTokens": self.config.max_output_tokens,
+                "maxOutputTokens": self._max_output_tokens_for_purpose(purpose),
             },
         }
         if system_instruction.strip():
@@ -88,6 +96,7 @@ class LLMClient:
         base_url: str,
         api_key: str,
         model: str,
+        purpose: str,
     ) -> LLMResponse:
         endpoint = base_url.rstrip("/") + "/v1/chat/completions"
         messages = []
@@ -97,7 +106,7 @@ class LLMClient:
         payload = {
             "model": model,
             "messages": messages,
-            "max_tokens": self.config.max_output_tokens,
+            "max_tokens": self._max_output_tokens_for_purpose(purpose),
         }
         payload.update(self._openai_sampling_payload(model))
         headers = {
@@ -122,6 +131,21 @@ class LLMClient:
             "top_p": self.config.top_p,
         }
 
+    def _max_output_tokens_for_purpose(self, purpose: str) -> int:
+        if purpose == "reflection":
+            return self.config.reflection_max_output_tokens
+        return self.config.max_output_tokens
+
+    def _request_timeout_for_payload(self, payload: dict) -> int:
+        gemini_cfg = payload.get("generationConfig")
+        if isinstance(gemini_cfg, dict):
+            max_tokens = gemini_cfg.get("maxOutputTokens", self.config.max_output_tokens)
+        else:
+            max_tokens = payload.get("max_tokens", self.config.max_output_tokens)
+        if max_tokens == self.config.reflection_max_output_tokens:
+            return self.config.reflection_request_timeout_s
+        return self.config.request_timeout_s
+
     def _post_with_retry(
         self,
         endpoint: str,
@@ -140,7 +164,7 @@ class LLMClient:
                     params=params,
                     headers=headers,
                     json=payload,
-                    timeout=self.config.request_timeout_s,
+                    timeout=self._request_timeout_for_payload(payload),
                 )
             except requests.RequestException as exc:
                 last_err = exc

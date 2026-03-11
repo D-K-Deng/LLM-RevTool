@@ -171,63 +171,63 @@ class SolveOrchestrator:
                         (attempt_dir / "Reflection.txt").write_text(
                             attempt_reflection_text, encoding="utf-8"
                         )
-                        tool_plan = self.generator.plan_tools(
-                            analysis=analysis_report.to_dict(),
-                            attempt=attempt,
-                            feedback=attempt_feedback,
-                            previous_code=attempt_previous_code,
-                            reflection_text=attempt_reflection_text,
-                            attempt_history=attempt_history,
-                            previous_tool_results=attempt_tool_results_text,
-                        )
-                        tool_results = self.tool_runner.run_requests(
-                            binary_path=binary_path,
-                            requests=tool_plan.get("tool_requests", []),
-                        )
-                        command_results = self.command_runner.run_requests(
-                            binary_path=binary_path,
-                            requests=tool_plan.get("command_requests", []),
-                        )
-                        shell_results = self.command_runner.run_requests(
-                            binary_path=binary_path,
-                            requests=[
-                                {"command": "shell", "args": {"command": item.get("command", "")}}
-                                for item in tool_plan.get("shell_requests", [])
-                            ],
-                        )
-                        tool_summary = self.tool_runner.summarize_results(tool_results)
-                        command_summary = self.command_runner.summarize_results(
-                            command_results + shell_results
-                        )
-                        attempt_tool_results_text = (
-                            f"{tool_summary}\n\n{command_summary}".strip()
-                            if tool_summary or command_summary
-                            else "<no local tool results>"
-                        )
-                        write_json(round_dir / "ToolPlan.json", tool_plan)
-                        write_json(
-                            round_dir / "ToolResults.json",
-                            {
-                                "tool_results": tool_results,
-                                "command_results": command_results,
-                                "shell_results": shell_results,
-                            },
-                        )
-                        write_json(attempt_dir / "ToolPlan.json", tool_plan)
-                        write_json(
-                            attempt_dir / "ToolResults.json",
-                            {
-                                "tool_results": tool_results,
-                                "command_results": command_results,
-                                "shell_results": shell_results,
-                            },
-                        )
-                        (round_dir / "ToolResults.txt").write_text(
-                            attempt_tool_results_text, encoding="utf-8"
-                        )
-                        (attempt_dir / "ToolResults.txt").write_text(
-                            attempt_tool_results_text, encoding="utf-8"
-                        )
+                    tool_plan = self.generator.plan_tools(
+                        analysis=analysis_report.to_dict(),
+                        attempt=attempt,
+                        feedback=attempt_feedback,
+                        previous_code=attempt_previous_code,
+                        reflection_text=attempt_reflection_text,
+                        attempt_history=attempt_history,
+                        previous_tool_results=attempt_tool_results_text,
+                    )
+                    tool_results = self.tool_runner.run_requests(
+                        binary_path=binary_path,
+                        requests=tool_plan.get("tool_requests", []),
+                    )
+                    command_results = self.command_runner.run_requests(
+                        binary_path=binary_path,
+                        requests=tool_plan.get("command_requests", []),
+                    )
+                    shell_results = self.command_runner.run_requests(
+                        binary_path=binary_path,
+                        requests=[
+                            {"command": "shell", "args": {"command": item.get("command", "")}}
+                            for item in tool_plan.get("shell_requests", [])
+                        ],
+                    )
+                    tool_summary = self.tool_runner.summarize_results(tool_results)
+                    command_summary = self.command_runner.summarize_results(
+                        command_results + shell_results
+                    )
+                    attempt_tool_results_text = (
+                        f"{tool_summary}\n\n{command_summary}".strip()
+                        if tool_summary or command_summary
+                        else "<no local tool results>"
+                    )
+                    write_json(round_dir / "ToolPlan.json", tool_plan)
+                    write_json(
+                        round_dir / "ToolResults.json",
+                        {
+                            "tool_results": tool_results,
+                            "command_results": command_results,
+                            "shell_results": shell_results,
+                        },
+                    )
+                    write_json(attempt_dir / "ToolPlan.json", tool_plan)
+                    write_json(
+                        attempt_dir / "ToolResults.json",
+                        {
+                            "tool_results": tool_results,
+                            "command_results": command_results,
+                            "shell_results": shell_results,
+                        },
+                    )
+                    (round_dir / "ToolResults.txt").write_text(
+                        attempt_tool_results_text, encoding="utf-8"
+                    )
+                    (attempt_dir / "ToolResults.txt").write_text(
+                        attempt_tool_results_text, encoding="utf-8"
+                    )
 
                     generation = self.generator.generate(
                         analysis=analysis_report.to_dict(),
@@ -255,6 +255,35 @@ class SolveOrchestrator:
                     attempt_previous_code = generation.code
 
                     code_quality_issue = _detect_code_quality_issue(generation.code)
+                    if code_quality_issue:
+                        try:
+                            repaired = self.generator.repair_code_quality(
+                                code=generation.code,
+                                issue=code_quality_issue,
+                                analysis=analysis_report.to_dict(),
+                                attempt=attempt,
+                                feedback=attempt_feedback,
+                                reflection_text=attempt_reflection_text,
+                                tool_results_text=attempt_tool_results_text,
+                            )
+                            generation = repaired
+                            generation_payload = generation.to_dict()
+                            generation_payload["round"] = round_idx
+                            write_json(round_dir / "GenerationResult.json", generation_payload)
+                            write_json(attempt_dir / "GenerationResult.json", generation_payload)
+                            (round_dir / "raw_model_output.txt").write_text(
+                                generation.raw_text, encoding="utf-8"
+                            )
+                            (attempt_dir / "raw_model_output.txt").write_text(
+                                generation.raw_text, encoding="utf-8"
+                            )
+                            exploit_path.write_text(generation.code + "\n", encoding="utf-8")
+                            (attempt_dir / "exploit.py").write_text(generation.code + "\n", encoding="utf-8")
+                            attempt_previous_code = generation.code
+                            code_quality_issue = _detect_code_quality_issue(generation.code)
+                        except (LLMError, GenerationParseError):
+                            pass
+
                     if code_quality_issue:
                         issue = {
                             "attempt": attempt,

@@ -55,7 +55,7 @@ class ExploitGenerator:
         raw = self.client.generate_text(prompt, purpose="primary").text
 
         try:
-            parsed = parse_model_output(raw, strict=strict_output)
+            parsed = _parse_generation_response(raw, strict=strict_output)
             return GenerationResult(
                 strategy=parsed.strategy,
                 code=parsed.code,
@@ -71,12 +71,12 @@ class ExploitGenerator:
         repair_prompt = build_format_repair_prompt(raw)
         repaired = self.client.generate_text(repair_prompt, purpose="format_repair").text
         try:
-            parsed = parse_model_output(repaired, strict=True)
+            parsed = _parse_generation_response(repaired, strict=True)
             used_format_repair = True
             raw_text = repaired
         except GenerationParseError:
             # Preserve momentum when the model returns usable code but misses the exact section format.
-            parsed = parse_model_output(repaired, strict=False)
+            parsed = _parse_generation_response(repaired, strict=False)
             used_format_repair = True
             raw_text = repaired
         return GenerationResult(
@@ -108,6 +108,48 @@ class ExploitGenerator:
             return self.client.generate_text(prompt, purpose="reflection").text
         except LLMError as exc:
             return f"<reflection unavailable: {exc}>"
+
+    def repair_code_quality(
+        self,
+        code: str,
+        issue: str,
+        analysis: dict,
+        attempt: int,
+        feedback: dict,
+        reflection_text: str = "",
+        tool_results_text: str = "",
+    ) -> GenerationResult:
+        prompt = (
+            "Rewrite the exploit code and fix the reported issue.\n"
+            "Return exactly one fenced Python code block and nothing else.\n"
+            "Do not return section headers, explanations, bullets, markdown prose, or JSON.\n"
+            "Requirements:\n"
+            "- valid Python 3\n"
+            "- accept binary path from argv / --binary\n"
+            "- actually execute the provided binary locally\n"
+            "- send payload or interact as needed\n"
+            "- print resulting stdout/stderr\n"
+            "- use pwntools for nontrivial ROP if helpful\n"
+            "- exactly one python fenced code block\n\n"
+            f"Reported issue:\n{issue}\n\n"
+            f"Reflection summary:\n{reflection_text or '<none>'}\n\n"
+            f"Latest local tool results:\n{tool_results_text or '<none>'}\n\n"
+            f"Feedback JSON:\n{json.dumps(feedback, indent=2, ensure_ascii=False)}\n\n"
+            f"Analysis JSON:\n{json.dumps(analysis, indent=2, ensure_ascii=False)}\n\n"
+            f"Previous code:\n```python\n{code}\n```"
+        )
+        raw = self.client.generate_text(prompt, purpose="format_repair").text
+        extracted = _extract_python_from_any(raw)
+        if not extracted:
+            raise GenerationParseError("Code-quality repair did not return Python code.")
+        return GenerationResult(
+            strategy="Repaired code after code-quality failure.",
+            code=extracted,
+            success_conditions="Look for WIN / FLAG markers in target output.",
+            raw_text=raw,
+            used_format_repair=True,
+            reflection_summary=reflection_text,
+        )
 
     def plan_tools(
         self,
@@ -161,6 +203,20 @@ def parse_model_output(text: str, strict: bool = True) -> ParsedSections:
         return _parse_relaxed(text)
 
 
+def _parse_generation_response(text: str, strict: bool) -> ParsedSections:
+    try:
+        return parse_model_output(text, strict=strict)
+    except GenerationParseError:
+        code = _extract_python_from_any(text)
+        if not code:
+            raise
+        return ParsedSections(
+            strategy="Recovered executable code from malformed model output.",
+            code=code,
+            success_conditions="Look for WIN / FLAG markers in target output.",
+        )
+
+
 def _parse_strict(text: str) -> ParsedSections:
     sec1 = re.search(r"SECTION\s*1\s*:\s*Strategy", text, re.IGNORECASE)
     sec2 = re.search(r"SECTION\s*2\s*:\s*Code", text, re.IGNORECASE)
@@ -177,7 +233,7 @@ def _parse_strict(text: str) -> ParsedSections:
     code_blocks = re.findall(r"```(?:python)?\s*(.*?)```", section2_body, re.IGNORECASE | re.DOTALL)
     if len(code_blocks) != 1:
         raise GenerationParseError("SECTION 2 must contain exactly one python fenced block.")
-    code = code_blocks[0].strip()
+    code = _normalize_python_candidate(code_blocks[0])
     if not code:
         raise GenerationParseError("Code block is empty.")
 
@@ -189,20 +245,131 @@ def _parse_strict(text: str) -> ParsedSections:
 
 
 def _parse_relaxed(text: str) -> ParsedSections:
-    code_blocks = re.findall(r"```(?:python)?\s*(.*?)```", text, re.IGNORECASE | re.DOTALL)
-    if not code_blocks:
-        raise GenerationParseError("No python code block found.")
-    code = code_blocks[0].strip()
+    code = _extract_python_from_any(text)
+    if "```" in text and code:
+        match = re.search(r"```(?:python)?\s*.*?```", text, re.IGNORECASE | re.DOTALL)
+        assert match is not None
+        before = text[: match.start()].strip()
+        after = text[match.end() :].strip()
+    else:
+        before = ""
+        after = ""
 
-    # Minimal fallback split around code block
-    match = re.search(r"```(?:python)?\s*.*?```", text, re.IGNORECASE | re.DOTALL)
-    assert match is not None
-    before = text[: match.start()].strip()
-    after = text[match.end() :].strip()
+    if not code:
+        raise GenerationParseError("No python code block found.")
 
     strategy = before or "No explicit strategy provided."
     success_conditions = after or "Look for WIN / FLAG markers in target output."
     return ParsedSections(strategy=strategy, code=code, success_conditions=success_conditions)
+
+
+def _extract_python_from_any(text: str) -> str:
+    code_blocks = re.findall(r"```(?:python)?\s*(.*?)```", text, re.IGNORECASE | re.DOTALL)
+    for block in code_blocks:
+        candidate = _normalize_python_candidate(block)
+        if candidate:
+            return candidate
+    return _extract_likely_python(text)
+
+
+def _extract_likely_python(text: str) -> str:
+    stripped = text.strip()
+    if not stripped:
+        return ""
+    lines = stripped.splitlines()
+    pythonish = []
+    saw_code = False
+    for line in lines:
+        if not saw_code and not line.strip():
+            continue
+        if not saw_code and any(
+            token in line
+            for token in (
+                "import ",
+                "from ",
+                "def ",
+                "class ",
+                "if __name__",
+                "parser =",
+                "process(",
+                "subprocess.",
+            )
+        ):
+            saw_code = True
+        if saw_code:
+            pythonish.append(line)
+    candidate = _normalize_python_candidate("\n".join(pythonish))
+    if candidate:
+        return candidate
+
+    fallback = _normalize_python_candidate(stripped)
+    if any(token in fallback for token in ("import ", "from ", "def ", "process(", "subprocess.")):
+        return fallback
+    return ""
+
+
+def _normalize_python_candidate(text: str) -> str:
+    candidate = text.strip()
+    if not candidate:
+        return ""
+    candidate = re.sub(r"^```(?:python)?", "", candidate, flags=re.IGNORECASE).strip()
+    candidate = re.sub(r"```$", "", candidate).strip()
+    if candidate.lower().startswith("python\n"):
+        candidate = candidate.split("\n", 1)[1].strip()
+
+    lines = candidate.splitlines()
+    while lines:
+        line = lines[0].strip()
+        if not line:
+            lines.pop(0)
+            continue
+        if line.lower() in {"python", "code", "section 2: code"}:
+            lines.pop(0)
+            continue
+        if line.startswith(("SECTION ", "SECTION:", "Strategy:", "Success Conditions:")):
+            lines.pop(0)
+            continue
+        if line.startswith(("```", "'''")):
+            lines.pop(0)
+            continue
+        break
+
+    while lines and not _looks_like_python_code_line(lines[0]):
+        lines.pop(0)
+
+    return "\n".join(lines).strip()
+
+
+def _looks_like_python_code_line(line: str) -> bool:
+    stripped = line.strip()
+    if not stripped:
+        return False
+    starters = (
+        "import ",
+        "from ",
+        "def ",
+        "class ",
+        "if ",
+        "for ",
+        "while ",
+        "try:",
+        "with ",
+        "parser =",
+        "args =",
+        "binary =",
+        "elf =",
+        "rop =",
+        "io =",
+        "proc =",
+        "context.",
+        "target =",
+        "payload =",
+        "main(",
+        "if __name__",
+    )
+    if any(stripped.startswith(prefix) for prefix in starters):
+        return True
+    return bool(re.match(r"^[A-Za-z_][A-Za-z0-9_]*\s*=", stripped))
 
 
 def parse_tool_plan(text: str) -> dict:

@@ -114,6 +114,10 @@ OPENAI_COMPAT_BASE_URL=https://llm-proxy.dartmouth.edu
 OPENAI_COMPAT_API_KEY=YOUR_VIRTUAL_KEY_GOES_HERE
 OPENAI_COMPAT_MODEL=gpt-5.4-2026-03-05
 REFLECTION_OPENAI_COMPAT_MODEL=gpt-4.1-mini
+PWNGPT_MAX_OUTPUT_TOKENS=8192
+PWNGPT_REFLECTION_MAX_OUTPUT_TOKENS=2048
+PWNGPT_REQUEST_TIMEOUT_S=180
+PWNGPT_REFLECTION_REQUEST_TIMEOUT_S=60
 PWNGPT_MAX_INNER_ROUNDS_PER_ATTEMPT=4
 ```
 
@@ -133,6 +137,20 @@ How the pipeline uses the two models:
 - The reflection/tool-planning loop can request local read-only analysis tools and feed results back into the next generation round
 
 This keeps iterative loops cheaper and faster while reserving the expensive model for the main exploit-writing step.
+
+Token budgeting:
+
+- `PWNGPT_MAX_OUTPUT_TOKENS`: main exploit-generation and format-repair output budget
+- `PWNGPT_REFLECTION_MAX_OUTPUT_TOKENS`: reflection / tool-planning output budget
+- `PWNGPT_REQUEST_TIMEOUT_S`: timeout for main exploit-generation / format-repair requests
+- `PWNGPT_REFLECTION_REQUEST_TIMEOUT_S`: timeout for reflection / tool-planning requests
+
+Recommended default:
+
+- keep `PWNGPT_MAX_OUTPUT_TOKENS` high enough for full exploit scripts, for example `8192`
+- keep `PWNGPT_REFLECTION_MAX_OUTPUT_TOKENS` lower, for example `2048`
+- keep `PWNGPT_REQUEST_TIMEOUT_S` higher for Gemini main generations, for example `180`
+- keep `PWNGPT_REFLECTION_REQUEST_TIMEOUT_S` lower, for example `60`
 
 Local tool layer:
 
