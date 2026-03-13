@@ -65,7 +65,19 @@ class SolveOrchestrator:
         last_error = ""
         previous_code = ""
         reflection_text = ""
-        tool_results_text = ""
+        tool_results_text = _collect_bootstrap_evidence(
+            binary_path=binary_path,
+            analysis=analysis_report.to_dict(),
+            tool_runner=self.tool_runner,
+            command_runner=self.command_runner,
+        )
+        auto_facts_text = _derive_auto_facts(analysis_report.to_dict(), tool_results_text)
+        if auto_facts_text:
+            tool_results_text = f"AUTO FACTS\n{auto_facts_text}\n\nRAW EVIDENCE\n{tool_results_text}"
+        (run_dir / "BootstrapEvidence.txt").write_text(tool_results_text, encoding="utf-8")
+        if auto_facts_text:
+            (run_dir / "AutoFacts.txt").write_text(auto_facts_text, encoding="utf-8")
+        exploit_plan_text = "<no exploit plan>"
         attempts_used = 0
 
         heuristic_code = _build_heuristic_exploit(analysis_report.to_dict())
@@ -142,6 +154,7 @@ class SolveOrchestrator:
             attempt_previous_code = previous_code
             attempt_reflection_text = reflection_text
             attempt_tool_results_text = tool_results_text
+            attempt_exploit_plan_text = exploit_plan_text
 
             for round_idx in range(1, inner_rounds + 1):
                 round_dir = attempt_dir / f"round_{round_idx:02d}"
@@ -199,11 +212,21 @@ class SolveOrchestrator:
                     command_summary = self.command_runner.summarize_results(
                         command_results + shell_results
                     )
-                    attempt_tool_results_text = (
+                    current_tool_results_text = (
                         f"{tool_summary}\n\n{command_summary}".strip()
-                        if tool_summary or command_summary
-                        else "<no local tool results>"
+                        if tool_results or command_results or shell_results
+                        else ""
                     )
+                    if current_tool_results_text:
+                        if (
+                            attempt_tool_results_text
+                            and attempt_tool_results_text not in {"<no local tool results>", "<no bootstrap evidence>"}
+                        ):
+                            attempt_tool_results_text = (
+                                f"{attempt_tool_results_text}\n\nNEW ROUND RESULTS\n{current_tool_results_text}"
+                            ).strip()
+                        else:
+                            attempt_tool_results_text = current_tool_results_text
                     write_json(round_dir / "ToolPlan.json", tool_plan)
                     write_json(
                         round_dir / "ToolResults.json",
@@ -228,17 +251,88 @@ class SolveOrchestrator:
                     (attempt_dir / "ToolResults.txt").write_text(
                         attempt_tool_results_text, encoding="utf-8"
                     )
-
-                    generation = self.generator.generate(
+                    attempt_exploit_plan_text = self.generator.plan_exploit(
                         analysis=analysis_report.to_dict(),
                         attempt=attempt,
                         feedback=attempt_feedback,
-                        strict_output=strict,
-                        attempt_history=attempt_history,
                         previous_code=attempt_previous_code,
                         reflection_text=attempt_reflection_text,
                         tool_results_text=attempt_tool_results_text,
+                        attempt_history=attempt_history,
                     )
+                    (round_dir / "ExploitPlan.txt").write_text(
+                        attempt_exploit_plan_text, encoding="utf-8"
+                    )
+                    (attempt_dir / "ExploitPlan.txt").write_text(
+                        attempt_exploit_plan_text, encoding="utf-8"
+                    )
+
+                    challenge_class = (
+                        analysis_report.to_dict().get("helper_insights", {}).get("challenge_class")
+                    )
+                    scaffold_mode = challenge_class in {"pivot", "fluff", "ret2csu"}
+                    if scaffold_mode:
+                        used_direct_repair = False
+                        try:
+                            if attempt_previous_code and _should_try_direct_runtime_repair(attempt_feedback):
+                                used_direct_repair = True
+                                generation = self.generator.repair_runtime_issue(
+                                    code=attempt_previous_code,
+                                    verification_feedback=attempt_feedback,
+                                    analysis=analysis_report.to_dict(),
+                                    attempt=attempt,
+                                    reflection_text=attempt_reflection_text,
+                                    tool_results_text=attempt_tool_results_text,
+                                    scaffold_mode=True,
+                                )
+                            elif attempt_previous_code and _should_try_direct_code_repair(attempt_feedback):
+                                used_direct_repair = True
+                                generation = self.generator.repair_code_quality(
+                                    code=attempt_previous_code,
+                                    issue=str(attempt_feedback.get("error", "")),
+                                    analysis=analysis_report.to_dict(),
+                                    attempt=attempt,
+                                    feedback=attempt_feedback,
+                                    reflection_text=attempt_reflection_text,
+                                    tool_results_text=attempt_tool_results_text,
+                                    scaffold_mode=True,
+                                )
+                            else:
+                                generation = self.generator.generate_scaffolded(
+                                    analysis=analysis_report.to_dict(),
+                                    attempt=attempt,
+                                    feedback=attempt_feedback,
+                                    attempt_history=attempt_history,
+                                    previous_code=attempt_previous_code,
+                                    reflection_text=attempt_reflection_text,
+                                    tool_results_text=attempt_tool_results_text,
+                                    exploit_plan_text=attempt_exploit_plan_text,
+                                )
+                        except (LLMError, GenerationParseError):
+                            if not used_direct_repair:
+                                raise
+                            generation = self.generator.generate_scaffolded(
+                                analysis=analysis_report.to_dict(),
+                                attempt=attempt,
+                                feedback=attempt_feedback,
+                                attempt_history=attempt_history,
+                                previous_code=attempt_previous_code,
+                                reflection_text=attempt_reflection_text,
+                                tool_results_text=attempt_tool_results_text,
+                                exploit_plan_text=attempt_exploit_plan_text,
+                            )
+                    else:
+                        generation = self.generator.generate(
+                            analysis=analysis_report.to_dict(),
+                            attempt=attempt,
+                            feedback=attempt_feedback,
+                            strict_output=strict,
+                            attempt_history=attempt_history,
+                            previous_code=attempt_previous_code,
+                            reflection_text=attempt_reflection_text,
+                            tool_results_text=attempt_tool_results_text,
+                            exploit_plan_text=attempt_exploit_plan_text,
+                        )
                     generation_payload = generation.to_dict()
                     generation_payload["round"] = round_idx
                     write_json(round_dir / "GenerationResult.json", generation_payload)
@@ -249,23 +343,33 @@ class SolveOrchestrator:
                     (attempt_dir / "raw_model_output.txt").write_text(
                         generation.raw_text, encoding="utf-8"
                     )
+                    prepared_code = _prepare_generated_code(generation.code)
                     exploit_path = round_dir / "exploit.py"
-                    exploit_path.write_text(generation.code + "\n", encoding="utf-8")
-                    (attempt_dir / "exploit.py").write_text(generation.code + "\n", encoding="utf-8")
-                    attempt_previous_code = generation.code
+                    exploit_path.write_text(prepared_code + "\n", encoding="utf-8")
+                    (attempt_dir / "exploit.py").write_text(prepared_code + "\n", encoding="utf-8")
+                    attempt_previous_code = prepared_code
 
-                    code_quality_issue = _detect_code_quality_issue(generation.code)
+                    code_quality_issue = _detect_code_quality_issue(
+                        prepared_code,
+                        analysis_report.to_dict().get("helper_insights", {}).get("challenge_class"),
+                    )
                     if code_quality_issue:
-                        try:
-                            repaired = self.generator.repair_code_quality(
-                                code=generation.code,
-                                issue=code_quality_issue,
+                        repair_issue = code_quality_issue
+                        for _ in range(3):
+                            try:
+                                repaired = self.generator.repair_code_quality(
+                                    code=prepared_code,
+                                    issue=repair_issue,
                                 analysis=analysis_report.to_dict(),
                                 attempt=attempt,
                                 feedback=attempt_feedback,
                                 reflection_text=attempt_reflection_text,
                                 tool_results_text=attempt_tool_results_text,
+                                scaffold_mode=scaffold_mode,
                             )
+                            except (LLMError, GenerationParseError):
+                                break
+
                             generation = repaired
                             generation_payload = generation.to_dict()
                             generation_payload["round"] = round_idx
@@ -277,12 +381,17 @@ class SolveOrchestrator:
                             (attempt_dir / "raw_model_output.txt").write_text(
                                 generation.raw_text, encoding="utf-8"
                             )
-                            exploit_path.write_text(generation.code + "\n", encoding="utf-8")
-                            (attempt_dir / "exploit.py").write_text(generation.code + "\n", encoding="utf-8")
-                            attempt_previous_code = generation.code
-                            code_quality_issue = _detect_code_quality_issue(generation.code)
-                        except (LLMError, GenerationParseError):
-                            pass
+                            prepared_code = _prepare_generated_code(generation.code)
+                            exploit_path.write_text(prepared_code + "\n", encoding="utf-8")
+                            (attempt_dir / "exploit.py").write_text(prepared_code + "\n", encoding="utf-8")
+                            attempt_previous_code = prepared_code
+                            code_quality_issue = _detect_code_quality_issue(
+                                prepared_code,
+                                analysis_report.to_dict().get("helper_insights", {}).get("challenge_class"),
+                            )
+                            if not code_quality_issue:
+                                break
+                            repair_issue = code_quality_issue
 
                     if code_quality_issue:
                         issue = {
@@ -410,6 +519,58 @@ class SolveOrchestrator:
                 write_json(round_dir / "VerificationResult.json", ver_payload)
                 write_json(attempt_dir / "VerificationResult.json", ver_payload)
 
+                if _should_try_runtime_repair(ver):
+                    try:
+                        repaired = self.generator.repair_runtime_issue(
+                            code=prepared_code,
+                            verification_feedback=ver.feedback_payload,
+                            analysis=analysis_report.to_dict(),
+                            attempt=attempt,
+                            reflection_text=attempt_reflection_text,
+                            tool_results_text=attempt_tool_results_text,
+                            scaffold_mode=scaffold_mode,
+                        )
+                        generation = repaired
+                        generation_payload = generation.to_dict()
+                        generation_payload["round"] = round_idx
+                        generation_payload["runtime_repair_used"] = True
+                        write_json(round_dir / "GenerationResult.json", generation_payload)
+                        write_json(attempt_dir / "GenerationResult.json", generation_payload)
+                        (round_dir / "raw_model_output.txt").write_text(
+                            generation.raw_text, encoding="utf-8"
+                        )
+                        (attempt_dir / "raw_model_output.txt").write_text(
+                            generation.raw_text, encoding="utf-8"
+                        )
+                        prepared_code = _prepare_generated_code(generation.code)
+                        exploit_path.write_text(prepared_code + "\n", encoding="utf-8")
+                        (attempt_dir / "exploit.py").write_text(prepared_code + "\n", encoding="utf-8")
+                        attempt_previous_code = prepared_code
+
+                        repair_issue = _detect_code_quality_issue(
+                            prepared_code,
+                            analysis_report.to_dict().get("helper_insights", {}).get("challenge_class"),
+                        )
+                        if not repair_issue:
+                            ver = self.verifier.verify(
+                                binary_path=binary_path,
+                                exploit_path=exploit_path,
+                                attempt=attempt,
+                                success_regex=success_regex,
+                            )
+                            ver.artifacts = {
+                                "exploit_path": str(exploit_path.resolve()),
+                                "attempt_dir": str(round_dir.resolve()),
+                                "outer_attempt_dir": str(attempt_dir.resolve()),
+                            }
+                            ver_payload = ver.to_dict()
+                            ver_payload["round"] = round_idx
+                            ver_payload["runtime_repair_used"] = True
+                            write_json(round_dir / "VerificationResult.json", ver_payload)
+                            write_json(attempt_dir / "VerificationResult.json", ver_payload)
+                    except (LLMError, GenerationParseError):
+                        pass
+
                 log_item = {
                     "attempt": attempt,
                     "round": round_idx,
@@ -453,6 +614,7 @@ class SolveOrchestrator:
             previous_code = attempt_previous_code
             reflection_text = attempt_reflection_text
             tool_results_text = attempt_tool_results_text
+            exploit_plan_text = attempt_exploit_plan_text
 
         elapsed = perf_counter() - t0
         summary = {
@@ -476,7 +638,7 @@ class SolveOrchestrator:
         return summary
 
 
-def _detect_code_quality_issue(code: str) -> str | None:
+def _detect_code_quality_issue(code: str, challenge_class: str | None = None) -> str | None:
     try:
         ast.parse(code)
     except SyntaxError as exc:
@@ -506,7 +668,235 @@ def _detect_code_quality_issue(code: str) -> str | None:
     execution_markers = ["subprocess.Popen", "subprocess.run", "process(", "remote(", ".communicate(", ".recvall("]
     if not any(marker in code for marker in execution_markers):
         return "Generated exploit does not appear to execute the target or capture output."
+    family_issue = _detect_family_completion_issue(code, challenge_class)
+    if family_issue:
+        return family_issue
     return None
+
+
+def _detect_family_completion_issue(code: str, challenge_class: str | None) -> str | None:
+    lowered = code.lower()
+    send_ops = sum(lowered.count(token) for token in (".send(", ".sendline(", ".sendafter(", ".sendlineafter("))
+
+    if challenge_class == "pivot":
+        missing = []
+        if "foothold" not in lowered or ".got['foothold_function']" not in lowered:
+            missing.append("foothold_function resolution")
+        ret2win_markers = (
+            "ret2win_addr",
+            "symbols['ret2win']",
+            'symbols["ret2win"]',
+            "ret2win_offset",
+            "libpivot_base",
+        )
+        if not any(marker in lowered for marker in ret2win_markers):
+            missing.append("ret2win computation/call")
+        if send_ops < 2:
+            missing.append("both stage-1 and stage-2 payload sends")
+        if missing:
+            return (
+                "Pivot-family exploit is incomplete: missing "
+                + ", ".join(missing)
+                + ". Use the leaked pivot address, resolve ret2win via foothold/libpivot, and send both payload stages."
+            )
+
+    if challenge_class == "ret2csu":
+        if "__libc_csu_init" not in lowered and "csu" not in lowered:
+            return "ret2csu-family exploit is incomplete: it does not reference the CSU dispatcher gadgets."
+
+    if challenge_class == "fluff":
+        if "print_file" not in lowered or "flag.txt" not in lowered:
+            return "Fluff-family exploit is incomplete: it should write flag.txt into memory and call print_file."
+
+    return None
+
+
+def _should_try_runtime_repair(ver: VerificationResult) -> bool:
+    if ver.status != "failed":
+        return False
+    if ver.exit_code is None:
+        return False
+    text = f"{ver.stdout_tail}\n{ver.stderr_tail}"
+    actionable_markers = [
+        "traceback",
+        "assertionerror",
+        "keyerror",
+        "valueerror",
+        "typeerror",
+        "pwnlib",
+        "byteswarning",
+        "sigsegv",
+        "segmentation fault",
+        "stopped with exit code -11",
+        "struct.error",
+        "unpack requires a buffer",
+    ]
+    lowered = text.lower()
+    return any(marker in lowered for marker in actionable_markers)
+
+
+def _should_try_direct_runtime_repair(feedback: dict) -> bool:
+    if not isinstance(feedback, dict):
+        return False
+    status = str(feedback.get("status", "")).lower()
+    if status not in {"failed", "timeout"}:
+        return False
+    text = "\n".join(
+        str(feedback.get(key, ""))
+        for key in ("stderr_tail", "stdout_tail", "failure_reason", "error")
+    ).lower()
+    actionable_markers = (
+        "traceback",
+        "assertionerror",
+        "keyerror",
+        "valueerror",
+        "typeerror",
+        "byteswarning",
+        "struct.error",
+        "unpack requires a buffer",
+        "stopped process",
+        "sigsegv",
+        "segmentation fault",
+        "stopped with exit code -11",
+        "timed out",
+    )
+    return any(marker in text for marker in actionable_markers)
+
+
+def _should_try_direct_code_repair(feedback: dict) -> bool:
+    if not isinstance(feedback, dict):
+        return False
+    status = str(feedback.get("status", "")).lower()
+    if status not in {"generation_rejected", "generation_failed"}:
+        return False
+    error = str(feedback.get("error", "")).strip()
+    return bool(error)
+
+
+def _prepare_generated_code(code: str) -> str:
+    prepared = code.rstrip()
+    try:
+        tree = ast.parse(prepared)
+    except SyntaxError:
+        return prepared
+
+    function_defs = {
+        node.name: node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef)
+    }
+    if not function_defs:
+        return prepared
+
+    if "__name__" in prepared and "__main__" in prepared:
+        return prepared
+
+    bootstrap = ""
+    preferred_name = None
+    for candidate in ("main", "exploit", "solve", "run"):
+        if candidate in function_defs:
+            preferred_name = candidate
+            break
+    if preferred_name is None and len(function_defs) == 1:
+        preferred_name = next(iter(function_defs))
+
+    if preferred_name == "main":
+        bootstrap = "\n\nif __name__ == '__main__':\n    main()\n"
+    elif preferred_name is not None:
+        arg_count = len(function_defs[preferred_name].args.args)
+        if arg_count == 0:
+            bootstrap = f"\n\nif __name__ == '__main__':\n    {preferred_name}()\n"
+        elif arg_count == 1:
+            bootstrap = (
+                "\n\nif __name__ == '__main__':\n"
+                "    import argparse\n"
+                "    import os\n"
+                "    parser = argparse.ArgumentParser()\n"
+                "    parser.add_argument('binary', nargs='?', default=None)\n"
+                "    parser.add_argument('--binary', dest='binary_flag', default=None)\n"
+                "    args = parser.parse_args()\n"
+                "    binary = args.binary_flag or args.binary or os.environ.get('TARGET_BINARY')\n"
+                "    if not binary:\n"
+                "        raise SystemExit('missing binary path')\n"
+                f"    {preferred_name}(binary)\n"
+            )
+    if bootstrap:
+        return prepared + bootstrap
+    return prepared
+
+
+def _collect_bootstrap_evidence(
+    binary_path: Path,
+    analysis: dict,
+    tool_runner: LocalToolRunner,
+    command_runner: LocalCommandRunner,
+) -> str:
+    helper = analysis.get("helper_insights", {})
+    bundle = helper.get("bootstrap_bundle", {}) if isinstance(helper, dict) else {}
+    tool_requests = bundle.get("tool_requests", []) or []
+    command_requests = bundle.get("command_requests", []) or []
+
+    tool_results: list[dict] = []
+    for start in range(0, len(tool_requests), 3):
+        tool_results += tool_runner.run_requests(
+            binary_path=binary_path,
+            requests=tool_requests[start : start + 3],
+        )
+
+    command_results: list[dict] = []
+    for start in range(0, len(command_requests), 2):
+        command_results += command_runner.run_requests(
+            binary_path=binary_path,
+            requests=command_requests[start : start + 2],
+        )
+    tool_summary = tool_runner.summarize_results(tool_results)
+    command_summary = command_runner.summarize_results(command_results)
+    merged = f"{tool_summary}\n\n{command_summary}".strip()
+    return merged or "<no bootstrap evidence>"
+
+
+def _derive_auto_facts(analysis: dict, bootstrap_text: str) -> str:
+    helper = analysis.get("helper_insights", {}) if isinstance(analysis, dict) else {}
+    challenge_class = helper.get("challenge_class", "unknown")
+    facts: list[str] = []
+
+    runtime_dir_match = re.search(r"runtime_dir:\s*(.+)", bootstrap_text)
+    if runtime_dir_match:
+        facts.append(f"runtime_dir={runtime_dir_match.group(1).strip()}")
+
+    if "libpivot.so" in bootstrap_text:
+        facts.append("A sidecar library libpivot.so exists in the runtime directory.")
+    if "flag.txt" in bootstrap_text:
+        facts.append("A flag.txt file exists in the runtime directory.")
+
+    if challenge_class == "pivot":
+        if "UND foothold_function" in bootstrap_text or "foothold_function + 0" in bootstrap_text:
+            facts.append("foothold_function is imported through PLT/GOT; it is not the final target.")
+        if "ret2win" not in bootstrap_text:
+            facts.append("ret2win is not exported by the main binary; do not assume elf.symbols['ret2win'] exists.")
+        useful_match = re.search(r"usefulGadgets\s*\n?\s*.*?4009bb", bootstrap_text, re.DOTALL)
+        if useful_match or "4009bb" in bootstrap_text:
+            facts.append("pop rax; ret is available at 0x4009bb.")
+        if "4009bd" in bootstrap_text:
+            facts.append("xchg rsp, rax; ret is available at 0x4009bd.")
+        if "The Old Gods kindly bestow upon you a place to pivot" in bootstrap_text:
+            facts.append("The binary leaks a pivot address at startup before asking for the first ROP chain.")
+        if "Send a ROP chain now and it will land there" in bootstrap_text:
+            facts.append("The binary expects a first-stage ROP chain followed by a separate stack-smash payload.")
+
+    if challenge_class == "ret2csu":
+        if "__libc_csu_init" in bootstrap_text:
+            facts.append("Use __libc_csu_init gadgets instead of guessing ad-hoc pop gadgets.")
+    if challenge_class == "fluff":
+        for needle in ("xlat", "bextr", "stos"):
+            if needle in bootstrap_text:
+                facts.append(f"The constrained gadget family includes `{needle}`.")
+
+    deduped: list[str] = []
+    for fact in facts:
+        if fact not in deduped:
+            deduped.append(fact)
+    return "\n".join(f"- {item}" for item in deduped)
 
 
 def _build_heuristic_exploit(analysis: dict) -> str | None:

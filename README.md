@@ -138,6 +138,26 @@ How the pipeline uses the two models:
 
 This keeps iterative loops cheaper and faster while reserving the expensive model for the main exploit-writing step.
 
+Research context that informed this design:
+
+- Original AEG reference: "Automatic Exploit Generation in the Shell" (Brumley et al., NDSS 2011)
+- Julien Vanegue's AEGC material and retrospective:
+  - https://openwall.info/wiki/_media/people/jvanegue/files/aegc_vanegue.pdf
+  - https://spw18.langsec.org/slides/Vanegue-AEGC-5-year-perspective.pdf
+- AI Cyber Challenge official site:
+  - https://aicyberchallenge.com/
+- Trail of Bits Buttercup CRS:
+  - https://github.com/trailofbits/buttercup
+
+The practical takeaway is that high-performing systems are not "one prompt, one exploit". They are staged systems that combine:
+
+- binary analysis
+- challenge-family classification
+- targeted evidence gathering
+- iterative exploit refinement
+- runtime verification
+- repair / retry loops
+
 Token budgeting:
 
 - `PWNGPT_MAX_OUTPUT_TOKENS`: main exploit-generation and format-repair output budget
@@ -167,6 +187,7 @@ Current allowlisted tools:
 - `strings_search(pattern)`
 - `readelf_symbols(pattern)`
 - `readelf_sections()`
+- `readelf_relocs()`
 
 Current allowlisted commands:
 
@@ -175,6 +196,54 @@ Current allowlisted commands:
 - `objdump_disasm()`
 - `ropgadget()`
 - `nm_symbols()`
+- `run_head(timeout=2)`
+- `run_with_stdin(input_text='', input_hex='', timeout=2)`
+- `nearby_files()`
+
+Automatic bootstrap evidence:
+
+- Before the first LLM round, the pipeline now auto-collects a base evidence bundle
+- This always includes file metadata, runtime-directory file listings, dynamic-library information, startup output, section headers, relocations, and key symbols
+- The exact bootstrap bundle is then extended based on the inferred challenge class
+- The pipeline also derives a short `AutoFacts.txt` summary from that evidence so the LLM sees the most important constraints first
+
+Challenge taxonomy used by the pipeline:
+
+- `branch_input` -> direct input validation
+  - main tools: `strings_search`, `run_head`, `run_with_stdin`
+- `ret2win` -> simple control hijack
+  - main tools: `readelf_symbols`, `gadget_search`, `run_head`
+- `split` -> simple ROP argument call
+  - main tools: `strings_search`, `readelf_symbols`, `gadget_search`
+- `callme` -> multi-call ROP
+  - main tools: `readelf_symbols`, `gadget_search`, `nearby_files`
+- `write4` -> write-what-where ROP
+  - main tools: `readelf_sections`, `gadget_search`, `readelf_symbols`
+- `badchars` -> encoded-write then decode ROP
+  - main tools: `readelf_sections`, `gadget_search`, `readelf_symbols`
+- `fluff` -> constrained-gadget ROP
+  - main tools: `readelf_sections`, `readelf_symbols`, `gadget_search`
+- `pivot` -> stack pivot plus dynamic symbol resolution
+  - main tools: `readelf_symbols`, `readelf_relocs`, `gadget_search`, `nearby_files`
+- `ret2csu` -> CSU-dispatch ROP
+  - main tools: `symbol_disasm(__libc_csu_init)`, `gadget_search`, `readelf_symbols`
+- `format_string` -> format-string leak/write
+  - main tools: `strings_search`, `readelf_symbols`, `run_head`
+- `stack_overflow` -> generic memory corruption
+  - main tools: `readelf_symbols`, `run_head`, `nearby_files`
+
+Why the taxonomy matters:
+
+- It reduces prompt ambiguity
+- It tells the LLM which exploit primitives are even plausible
+- It lets the pipeline collect better local evidence before the LLM writes code
+- It avoids wasting rounds on obviously wrong strategies
+
+Runtime-directory rule:
+
+- The verifier exports `TARGET_BINARY`, `TARGET_BINARY_DIR`, `TARGET_RUNTIME_DIR`, and `TARGET_CHALLENGE_DIR`
+- For challenges with sidecar files such as `.so`, `flag.txt`, `.dat`, or helper artifacts, generated exploits should prefer `TARGET_RUNTIME_DIR` or the current working directory over `dirname(binary_path)`
+- This is important for challenges like `pivot` or shared-library-backed tasks, where helper files may live in the challenge runtime directory rather than beside the copied binary
 
 Unsafe mode:
 
@@ -299,6 +368,8 @@ If the binary depends on local files, place them next to the binary or update yo
 Each run writes to `artifacts/<binary>_<timestamp>/`:
 
 - `AnalysisReport.json`
+- `BootstrapEvidence.txt`
+- `AutoFacts.txt` when distilled facts are available
 - `attempt_XX/GenerationResult.json`
 - `attempt_XX/raw_model_output.txt`
 - `attempt_XX/exploit.py`

@@ -19,11 +19,8 @@ def _default_generation_prompt() -> str:
         Goal: generate a local exploit script for a single binary.
 
         Hard constraints:
-        1) Output exactly 3 sections:
-           SECTION 1: Strategy
-           SECTION 2: Code
-           SECTION 3: Success Conditions
-        2) SECTION 2 must contain exactly one fenced Python code block.
+        1) Return a runnable exploit script as exactly one fenced Python code block.
+        2) Do not return section headers, markdown prose, bullet lists, JSON, or explanations outside the code block.
         3) Code must run locally and should be deterministic.
         4) Use argparse and accept binary path from argv[1] or --binary.
         4a) The verifier will invoke the script with the binary path as argv[1]. You must use that path.
@@ -32,7 +29,7 @@ def _default_generation_prompt() -> str:
         6) `pwntools` is installed in this environment. For nontrivial ROP tasks, prefer `pwntools` (`ELF`, `ROP`, `process`, `p64`, `u64`) over ad-hoc parsing.
         7) If the task is simple input/output, use `subprocess.Popen(..., stdin=PIPE, stdout=PIPE, stderr=PIPE, text=False)`.
         8) Do not include TODO placeholders like CORRECT_CODE_HERE; infer concrete values from the analysis JSON.
-        9) Do not include markdown outside the required section text.
+        9) Do not include markdown outside the single fenced Python code block.
         10) Keep script self-contained with clear runtime checks.
         11) The exploit must actually execute the target and print the resulting process output. Do not just build or return a payload.
         12) If the binary fits a known family (branch/input, simple ROP, constrained write, stack pivot, ret2csu-style dispatcher), follow the playbook evidence instead of improvising.
@@ -43,6 +40,12 @@ def _default_generation_prompt() -> str:
             - collect output
             - print output
             - exit nonzero only on real failure
+        14) The verifier sets these environment variables:
+            - TARGET_BINARY: absolute path to the target binary
+            - TARGET_BINARY_DIR: directory that contains the binary path
+            - TARGET_RUNTIME_DIR: directory where the challenge should usually be run
+            - TARGET_CHALLENGE_DIR: same as TARGET_RUNTIME_DIR
+        15) If the challenge uses sidecar files (.so, flag.txt, data files), prefer TARGET_RUNTIME_DIR / cwd over dirname(binary_path).
 
         Tips:
         - Use mitigations and function hints from analysis context.
@@ -52,6 +55,10 @@ def _default_generation_prompt() -> str:
         - If exploit is uncertain, still produce your best executable attempt.
         - Print meaningful progress logs from the script.
         - If concrete addresses, gadgets, relocations, writable sections, or runtime prompts are missing, request local tools/commands early instead of guessing.
+        - If local command results list nearby files or a runtime_dir inventory, use those concrete paths instead of assuming helper files live beside the binary.
+        - Avoid f-strings and multi-line string literals; they have caused repeated syntax failures in this pipeline.
+        - Prefer short scripts and compact helper functions over long commented walkthroughs.
+        - If an AUTO FACTS section is present in the local tool results, treat it as higher-priority distilled evidence.
 
         Helper playbook:
         {playbook_text}
@@ -67,6 +74,9 @@ def _default_generation_prompt() -> str:
 
         Latest local tool results:
         {tool_results_text}
+
+        Current exploit plan:
+        {exploit_plan_text}
 
         Input JSON:
         {analysis_json}
@@ -93,6 +103,7 @@ def build_generation_prompt(
     previous_code: str = "",
     reflection_text: str = "",
     tool_results_text: str = "",
+    exploit_plan_text: str = "",
     template_path: Path | None = None,
 ) -> str:
     template = load_generation_prompt_template(template_path)
@@ -106,6 +117,7 @@ def build_generation_prompt(
         previous_code=previous_code or "<none>",
         reflection_text=reflection_text or "<none>",
         tool_results_text=tool_results_text or "<no local tool results>",
+        exploit_plan_text=exploit_plan_text or "<no exploit plan>",
     )
     if not strict_output:
         prompt += (
@@ -114,25 +126,96 @@ def build_generation_prompt(
     return prompt
 
 
+def build_body_generation_prompt(
+    analysis: dict[str, Any],
+    attempt: int,
+    feedback: dict[str, Any],
+    attempt_history: list[dict[str, Any]] | None = None,
+    previous_code: str = "",
+    reflection_text: str = "",
+    tool_results_text: str = "",
+    exploit_plan_text: str = "",
+) -> str:
+    playbook_text = build_playbook_text(analysis)
+    return dedent(
+        f"""
+        You are writing only the BODY of a Python function:
+
+            def run_exploit(binary_path, runtime_dir, elf):
+                ...
+
+        Return exactly one JSON object and nothing else.
+        Required format:
+        {{
+          "body_lines": [
+            "line 1",
+            "line 2"
+          ]
+        }}
+
+        Each entry in `body_lines` must be one Python statement line that belongs inside that function body.
+        Do not define `main`, `run_exploit`, argparse, or `if __name__ == '__main__'`.
+        Do not return prose, bullets, markdown, or fenced code blocks.
+
+        Predefined names available inside the function body:
+        - `binary_path`: pathlib.Path for the target binary
+        - `runtime_dir`: pathlib.Path for the correct challenge runtime directory
+        - `elf`: pwntools ELF object for the main binary
+        - `os`, `re`, `Path`
+        - `context`, `ELF`, `ROP`, `process`, `flat`, `p64`, `u64`, `log`
+
+        Hard requirements:
+        - actually start the target locally
+        - interact with the real runtime prompts
+        - print final output
+        - prefer bytes for pwntools recv/send APIs
+        - avoid f-strings and multi-line string literals
+        - keep the body compact
+        - if an AUTO FACTS section is present below, obey it
+
+        Helper playbook:
+        {playbook_text}
+
+        Attempt history JSON:
+        {json.dumps(attempt_history or [], indent=2, ensure_ascii=False)}
+
+        Previous function/body or exploit code:
+        {previous_code or "<none>"}
+
+        Reflection summary:
+        {reflection_text or "<none>"}
+
+        Local tool results:
+        {tool_results_text or "<none>"}
+
+        Current exploit plan:
+        {exploit_plan_text or "<none>"}
+
+        Analysis JSON:
+        {json.dumps(analysis, indent=2, ensure_ascii=False)}
+
+        Attempt number: {attempt}
+        Previous feedback JSON:
+        {json.dumps(feedback, indent=2, ensure_ascii=False)}
+        """
+    ).strip()
+
+
 def build_format_repair_prompt(raw_response: str) -> str:
     return dedent(
         f"""
-        Reformat the following model output into STRICT format.
+        Rewrite the following model output into exactly one runnable Python fenced code block.
 
         Required format:
-        SECTION 1: Strategy
-        <text>
-        SECTION 2: Code
         ```python
         <code>
         ```
-        SECTION 3: Success Conditions
-        <text>
 
         Constraints:
         - Keep the original exploit logic as much as possible.
         - Ensure exactly one python fenced code block.
-        - No extra sections.
+        - No prose before or after the code block.
+        - The code must accept the binary path from argv / --binary and execute the target locally.
 
         Original output:
         {raw_response}
@@ -189,6 +272,58 @@ def build_reflection_prompt(
 
         Previous exploit code:
         {previous_code or "<none>"}
+
+        Analysis JSON:
+        {json.dumps(analysis, indent=2, ensure_ascii=False)}
+        """
+    ).strip()
+
+
+def build_exploit_plan_prompt(
+    analysis: dict[str, Any],
+    attempt: int,
+    feedback: dict[str, Any],
+    previous_code: str,
+    reflection_text: str,
+    tool_results_text: str = "",
+    attempt_history: list[dict[str, Any]] | None = None,
+) -> str:
+    playbook_text = build_playbook_text(analysis)
+    return dedent(
+        f"""
+        You are planning the next exploit attempt for a local binary challenge.
+
+        Return a short plan with exactly these sections:
+        SECTION P1: Goal
+        SECTION P2: Concrete Facts
+        SECTION P3: Next Steps
+
+        Rules:
+        - Be concrete and technical.
+        - List the exact symbols, gadgets, leaks, offsets, and runtime interactions you intend to use.
+        - If a fact is unknown, say it is unknown instead of guessing.
+        - Keep it short.
+
+        Helper playbook:
+        {playbook_text}
+
+        Attempt number:
+        {attempt}
+
+        Attempt history JSON:
+        {json.dumps(attempt_history or [], indent=2, ensure_ascii=False)}
+
+        Previous feedback JSON:
+        {json.dumps(feedback, indent=2, ensure_ascii=False)}
+
+        Reflection summary:
+        {reflection_text or "<none>"}
+
+        Previous exploit code:
+        {previous_code or "<none>"}
+
+        Local tool results:
+        {tool_results_text or "<none>"}
 
         Analysis JSON:
         {json.dumps(analysis, indent=2, ensure_ascii=False)}
@@ -288,16 +423,34 @@ def build_tool_request_prompt(
 def build_playbook_text(analysis: dict[str, Any]) -> str:
     helper = analysis.get("helper_insights", {})
     challenge_class = helper.get("challenge_class", "unknown")
+    challenge_family = helper.get("challenge_family", "unknown")
     methods = helper.get("recommended_methods", [])
     warnings = helper.get("prompt_warnings", [])
+    recommended_tools = helper.get("recommended_local_tools", [])
+    recommended_preruns = helper.get("recommended_preruns", [])
+    runtime_hints = helper.get("runtime_hints", [])
+    completion_requirements = helper.get("completion_requirements", [])
     offsets = helper.get("candidate_offsets", [])
     symbols = helper.get("candidate_symbols", [])
     inputs = helper.get("candidate_inputs", [])
 
     lines = [f"challenge_class: {challenge_class}"]
+    lines.append(f"challenge_family: {challenge_family}")
     if methods:
         lines.append("recommended_methods:")
         lines.extend(f"- {item}" for item in methods)
+    if recommended_tools:
+        lines.append("recommended_local_tools:")
+        lines.extend(f"- {item}" for item in recommended_tools)
+    if recommended_preruns:
+        lines.append("recommended_preruns:")
+        lines.extend(f"- {item}" for item in recommended_preruns)
+    if runtime_hints:
+        lines.append("runtime_hints:")
+        lines.extend(f"- {item}" for item in runtime_hints)
+    if completion_requirements:
+        lines.append("completion_requirements:")
+        lines.extend(f"- {item}" for item in completion_requirements)
     if warnings:
         lines.append("warnings:")
         lines.extend(f"- {item}" for item in warnings)

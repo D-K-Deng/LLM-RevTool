@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import json
 import re
+import ast
+import textwrap
 from dataclasses import dataclass
 
 from .llm_client import LLMClient, LLMError
 from .prompting import (
+    build_body_generation_prompt,
+    build_exploit_plan_prompt,
     build_format_repair_prompt,
     build_generation_prompt,
     build_reflection_prompt,
@@ -40,6 +44,7 @@ class ExploitGenerator:
         previous_code: str = "",
         reflection_text: str = "",
         tool_results_text: str = "",
+        exploit_plan_text: str = "",
     ) -> GenerationResult:
         prompt = build_generation_prompt(
             analysis=analysis,
@@ -50,9 +55,21 @@ class ExploitGenerator:
             previous_code=previous_code,
             reflection_text=reflection_text,
             tool_results_text=tool_results_text,
+            exploit_plan_text=exploit_plan_text,
             template_path=self.prompt_template_path,
         )
         raw = self.client.generate_text(prompt, purpose="primary").text
+
+        code = _extract_python_from_any(raw)
+        if code:
+            return GenerationResult(
+                strategy=_extract_strategy_summary(raw),
+                code=code,
+                success_conditions="Look for WIN / FLAG markers in target output.",
+                raw_text=raw,
+                used_format_repair=False,
+                reflection_summary=reflection_text,
+            )
 
         try:
             parsed = _parse_generation_response(raw, strict=strict_output)
@@ -70,6 +87,16 @@ class ExploitGenerator:
 
         repair_prompt = build_format_repair_prompt(raw)
         repaired = self.client.generate_text(repair_prompt, purpose="format_repair").text
+        repaired_code = _extract_python_from_any(repaired)
+        if repaired_code:
+            return GenerationResult(
+                strategy=_extract_strategy_summary(repaired),
+                code=repaired_code,
+                success_conditions="Look for WIN / FLAG markers in target output.",
+                raw_text=repaired,
+                used_format_repair=True,
+                reflection_summary=reflection_text,
+            )
         try:
             parsed = _parse_generation_response(repaired, strict=True)
             used_format_repair = True
@@ -85,6 +112,56 @@ class ExploitGenerator:
             success_conditions=parsed.success_conditions,
             raw_text=raw_text,
             used_format_repair=used_format_repair,
+            reflection_summary=reflection_text,
+        )
+
+    def generate_scaffolded(
+        self,
+        analysis: dict,
+        attempt: int,
+        feedback: dict,
+        attempt_history: list[dict] | None = None,
+        previous_code: str = "",
+        reflection_text: str = "",
+        tool_results_text: str = "",
+        exploit_plan_text: str = "",
+    ) -> GenerationResult:
+        prompt = build_body_generation_prompt(
+            analysis=analysis,
+            attempt=attempt,
+            feedback=feedback,
+            attempt_history=attempt_history,
+            previous_code=previous_code,
+            reflection_text=reflection_text,
+            tool_results_text=tool_results_text,
+            exploit_plan_text=exploit_plan_text,
+        )
+        raw = self.client.generate_text(prompt, purpose="primary").text
+        body = _extract_scaffold_body(raw)
+        if not body:
+            repair_prompt = (
+                "Rewrite the following model output into exactly one JSON object and nothing else.\n"
+                "Required format:\n"
+                "{\n"
+                '  "body_lines": ["stmt1", "stmt2"]\n'
+                "}\n"
+                "Each item must be one Python statement line for the body of run_exploit(binary_path, runtime_dir, elf).\n"
+                "Do not return prose, markdown, or fenced code blocks.\n\n"
+                f"Original output:\n{raw}"
+            )
+            repaired = self.client.generate_text(repair_prompt, purpose="format_repair").text
+            body = _extract_scaffold_body(repaired)
+            if not body:
+                raise GenerationParseError("No scaffolded body found in model output.")
+            raw = repaired
+
+        wrapped = _wrap_scaffolded_body(body)
+        return GenerationResult(
+            strategy="Scaffolded body generation for complex exploit family.",
+            code=wrapped,
+            success_conditions="Look for WIN / FLAG markers in target output.",
+            raw_text=raw,
+            used_format_repair=False,
             reflection_summary=reflection_text,
         )
 
@@ -118,38 +195,153 @@ class ExploitGenerator:
         feedback: dict,
         reflection_text: str = "",
         tool_results_text: str = "",
+        scaffold_mode: bool = False,
     ) -> GenerationResult:
-        prompt = (
-            "Rewrite the exploit code and fix the reported issue.\n"
-            "Return exactly one fenced Python code block and nothing else.\n"
-            "Do not return section headers, explanations, bullets, markdown prose, or JSON.\n"
-            "Requirements:\n"
-            "- valid Python 3\n"
-            "- accept binary path from argv / --binary\n"
-            "- actually execute the provided binary locally\n"
-            "- send payload or interact as needed\n"
-            "- print resulting stdout/stderr\n"
-            "- use pwntools for nontrivial ROP if helpful\n"
-            "- exactly one python fenced code block\n\n"
-            f"Reported issue:\n{issue}\n\n"
-            f"Reflection summary:\n{reflection_text or '<none>'}\n\n"
-            f"Latest local tool results:\n{tool_results_text or '<none>'}\n\n"
-            f"Feedback JSON:\n{json.dumps(feedback, indent=2, ensure_ascii=False)}\n\n"
-            f"Analysis JSON:\n{json.dumps(analysis, indent=2, ensure_ascii=False)}\n\n"
-            f"Previous code:\n```python\n{code}\n```"
-        )
+        if scaffold_mode:
+            prompt = (
+                "Fix the exploit BODY for a scaffolded exploit.\n"
+                "Return exactly one JSON object and nothing else.\n"
+                "Required format:\n"
+                "{\n"
+                '  "body_lines": ["stmt1", "stmt2"]\n'
+                "}\n"
+                "Each item in body_lines must be one valid Python statement line for the body of run_exploit(binary_path, runtime_dir, elf).\n"
+                "Do not return imports, main(), argparse, __main__, prose, markdown, or fenced code blocks.\n"
+                "Requirements:\n"
+                "- valid Python 3 statements only\n"
+                "- actually execute the target locally\n"
+                "- use bytes for pwntools recv/send\n"
+                "- prefer TARGET_RUNTIME_DIR / runtime_dir for sidecar files\n"
+                "- avoid f-strings and multi-line string literals\n\n"
+                f"Reported issue:\n{issue}\n\n"
+                f"Reflection summary:\n{reflection_text or '<none>'}\n\n"
+                f"Latest local tool results:\n{tool_results_text or '<none>'}\n\n"
+                f"Feedback JSON:\n{json.dumps(feedback, indent=2, ensure_ascii=False)}\n\n"
+                f"Analysis JSON:\n{json.dumps(analysis, indent=2, ensure_ascii=False)}\n\n"
+                f"Previous code:\n```python\n{code}\n```"
+            )
+        else:
+            prompt = (
+                "Rewrite the exploit code and fix the reported issue.\n"
+                "Return exactly one fenced Python code block and nothing else.\n"
+                "Do not return section headers, explanations, bullets, markdown prose, or JSON.\n"
+                "Requirements:\n"
+                "- valid Python 3\n"
+                "- accept binary path from argv / --binary\n"
+                "- actually execute the provided binary locally\n"
+                "- send payload or interact as needed\n"
+                "- print resulting stdout/stderr\n"
+                "- prefer os.environ['TARGET_RUNTIME_DIR'] or cwd for sidecar files instead of dirname(binary_path)\n"
+                "- use pwntools for nontrivial ROP if helpful\n"
+                "- avoid f-strings and multi-line string literals\n"
+                "- keep the script short and concrete\n"
+                "- exactly one python fenced code block\n\n"
+                f"Reported issue:\n{issue}\n\n"
+                f"Reflection summary:\n{reflection_text or '<none>'}\n\n"
+                f"Latest local tool results:\n{tool_results_text or '<none>'}\n\n"
+                f"Feedback JSON:\n{json.dumps(feedback, indent=2, ensure_ascii=False)}\n\n"
+                f"Analysis JSON:\n{json.dumps(analysis, indent=2, ensure_ascii=False)}\n\n"
+                f"Previous code:\n```python\n{code}\n```"
+            )
         raw = self.client.generate_text(prompt, purpose="format_repair").text
-        extracted = _extract_python_from_any(raw)
+        extracted = _extract_scaffold_body(raw) if scaffold_mode else _extract_python_from_any(raw)
         if not extracted:
             raise GenerationParseError("Code-quality repair did not return Python code.")
+        code_out = _wrap_scaffolded_body(extracted) if scaffold_mode else extracted
         return GenerationResult(
             strategy="Repaired code after code-quality failure.",
-            code=extracted,
+            code=code_out,
             success_conditions="Look for WIN / FLAG markers in target output.",
             raw_text=raw,
             used_format_repair=True,
             reflection_summary=reflection_text,
         )
+
+    def repair_runtime_issue(
+        self,
+        code: str,
+        verification_feedback: dict,
+        analysis: dict,
+        attempt: int,
+        reflection_text: str = "",
+        tool_results_text: str = "",
+        scaffold_mode: bool = False,
+    ) -> GenerationResult:
+        if scaffold_mode:
+            prompt = (
+                "Fix the BODY of a scaffolded exploit using the runtime failure details below.\n"
+                "Return exactly one JSON object and nothing else.\n"
+                "Required format:\n"
+                "{\n"
+                '  "body_lines": ["stmt1", "stmt2"]\n'
+                "}\n"
+                "Each item in body_lines must be one valid Python statement line for the body of run_exploit(binary_path, runtime_dir, elf).\n"
+                "Do not return imports, main(), argparse, __main__, prose, markdown, or fenced code blocks.\n"
+                "Preserve the exploit structure where possible and only fix the runtime bug.\n"
+                "Use bytes for pwntools recv/send and avoid f-strings.\n\n"
+                f"Attempt: {attempt}\n\n"
+                f"Verification feedback JSON:\n{json.dumps(verification_feedback, indent=2, ensure_ascii=False)}\n\n"
+                f"Reflection summary:\n{reflection_text or '<none>'}\n\n"
+                f"Local tool results:\n{tool_results_text or '<none>'}\n\n"
+                f"Analysis JSON:\n{json.dumps(analysis, indent=2, ensure_ascii=False)}\n\n"
+                f"Current code:\n```python\n{code}\n```"
+            )
+        else:
+            prompt = (
+                "Fix the exploit code using the runtime failure details below.\n"
+                "Return exactly one fenced Python code block and nothing else.\n"
+                "Do not rewrite from scratch unless necessary; preserve the existing exploit structure.\n"
+                "Requirements:\n"
+                "- valid Python 3\n"
+                "- keep argparse / TARGET_BINARY / TARGET_RUNTIME_DIR compatibility\n"
+                "- keep executing the target locally\n"
+                "- fix the specific runtime error shown in stderr/stdout\n"
+                "- print final process output\n"
+                "- avoid f-strings and multi-line string literals\n\n"
+                f"Attempt: {attempt}\n\n"
+                f"Verification feedback JSON:\n{json.dumps(verification_feedback, indent=2, ensure_ascii=False)}\n\n"
+                f"Reflection summary:\n{reflection_text or '<none>'}\n\n"
+                f"Local tool results:\n{tool_results_text or '<none>'}\n\n"
+                f"Analysis JSON:\n{json.dumps(analysis, indent=2, ensure_ascii=False)}\n\n"
+                f"Current code:\n```python\n{code}\n```"
+            )
+        raw = self.client.generate_text(prompt, purpose="format_repair").text
+        extracted = _extract_scaffold_body(raw) if scaffold_mode else _extract_python_from_any(raw)
+        if not extracted:
+            raise GenerationParseError("Runtime repair did not return Python code.")
+        code_out = _wrap_scaffolded_body(extracted) if scaffold_mode else extracted
+        return GenerationResult(
+            strategy="Repaired code after runtime verification failure.",
+            code=code_out,
+            success_conditions="Look for WIN / FLAG markers in target output.",
+            raw_text=raw,
+            used_format_repair=True,
+            reflection_summary=reflection_text,
+        )
+
+    def plan_exploit(
+        self,
+        analysis: dict,
+        attempt: int,
+        feedback: dict,
+        previous_code: str,
+        reflection_text: str,
+        tool_results_text: str = "",
+        attempt_history: list[dict] | None = None,
+    ) -> str:
+        prompt = build_exploit_plan_prompt(
+            analysis=analysis,
+            attempt=attempt,
+            feedback=feedback,
+            previous_code=previous_code,
+            reflection_text=reflection_text,
+            tool_results_text=tool_results_text,
+            attempt_history=attempt_history,
+        )
+        try:
+            return self.client.generate_text(prompt, purpose="reflection").text
+        except LLMError as exc:
+            return f"<exploit plan unavailable: {exc}>"
 
     def plan_tools(
         self,
@@ -211,7 +403,7 @@ def _parse_generation_response(text: str, strict: bool) -> ParsedSections:
         if not code:
             raise
         return ParsedSections(
-            strategy="Recovered executable code from malformed model output.",
+            strategy=_extract_strategy_summary(text),
             code=code,
             success_conditions="Look for WIN / FLAG markers in target output.",
         )
@@ -270,6 +462,28 @@ def _extract_python_from_any(text: str) -> str:
         if candidate:
             return candidate
     return _extract_likely_python(text)
+
+
+def _extract_strategy_summary(text: str) -> str:
+    stripped = text.strip()
+    if not stripped:
+        return "Generated exploit code."
+    code = _extract_python_from_any(text)
+    if code:
+        stripped = stripped.replace(code, "").strip()
+    if not stripped:
+        return "Generated exploit code."
+    lines = [line.strip() for line in stripped.splitlines() if line.strip()]
+    cleaned = []
+    for line in lines:
+        low = line.lower()
+        if low.startswith("section ") or low in {"```python", "```", "python"}:
+            continue
+        cleaned.append(line)
+        if len(cleaned) >= 3:
+            break
+    summary = " ".join(cleaned).strip()
+    return summary[:300] or "Generated exploit code."
 
 
 def _extract_likely_python(text: str) -> str:
@@ -338,6 +552,132 @@ def _normalize_python_candidate(text: str) -> str:
         lines.pop(0)
 
     return "\n".join(lines).strip()
+
+
+def _wrap_scaffolded_body(body: str) -> str:
+    body = _normalize_scaffold_indentation(body)
+    indented = "\n".join(
+        ("    " + line) if line.strip() else ""
+        for line in body.strip().splitlines()
+    )
+    return (
+        "import argparse\n"
+        "import os\n"
+        "import re\n"
+        "from pathlib import Path\n"
+        "from pwn import *\n\n"
+        "def run_exploit(binary_path, runtime_dir, elf):\n"
+        f"{indented}\n\n"
+        "def main():\n"
+        "    parser = argparse.ArgumentParser()\n"
+        "    parser.add_argument('binary', nargs='?', default=None)\n"
+        "    parser.add_argument('--binary', dest='binary_flag', default=None)\n"
+        "    args = parser.parse_args()\n"
+        "    binary = args.binary_flag or args.binary or os.environ.get('TARGET_BINARY')\n"
+        "    if not binary:\n"
+        "        raise SystemExit('missing binary path')\n"
+        "    binary_path = Path(binary).resolve()\n"
+        "    runtime_dir = Path(os.environ.get('TARGET_RUNTIME_DIR', str(binary_path.parent))).resolve()\n"
+        "    context.binary = str(binary_path)\n"
+        "    context.arch = 'amd64'\n"
+        "    context.bits = 64\n"
+        "    context.log_level = 'info'\n"
+        "    elf = ELF(str(binary_path), checksec=False)\n"
+        "    run_exploit(binary_path, runtime_dir, elf)\n\n"
+        "if __name__ == '__main__':\n"
+        "    main()\n"
+    )
+
+
+def _extract_scaffold_body(text: str) -> str:
+    json_body = _extract_scaffold_json_body(text)
+    if json_body:
+        return json_body
+    code = _extract_python_from_any(text)
+    if not code:
+        return ""
+    body = _extract_function_body(code, {"run_exploit", "exploit", "solve", "run"})
+    if body:
+        return _normalize_scaffold_indentation(body)
+    lowered = code.lower()
+    if any(token in lowered for token in ("import ", "if __name__", "argparse", "def main(")):
+        return ""
+    return _normalize_scaffold_indentation(code)
+
+
+def _extract_scaffold_json_body(text: str) -> str:
+    try:
+        payload = json.loads(_extract_json_blob(text))
+    except (GenerationParseError, json.JSONDecodeError):
+        return ""
+
+    if not isinstance(payload, dict):
+        return ""
+
+    body_lines = payload.get("body_lines", payload.get("lines"))
+    if isinstance(body_lines, list):
+        joined = "\n".join(str(line) for line in body_lines if str(line).strip())
+        return _normalize_scaffold_indentation(joined)
+
+    body = payload.get("body", payload.get("code"))
+    if isinstance(body, str):
+        return _normalize_scaffold_indentation(body)
+
+    return ""
+
+
+def _normalize_scaffold_indentation(body: str) -> str:
+    body = textwrap.dedent(body).strip("\n")
+    lines = body.splitlines()
+    if not lines:
+        return ""
+
+    indents = []
+    for line in lines[1:]:
+        if not line.strip():
+            continue
+        indent = len(line) - len(line.lstrip())
+        if indent > 0:
+            indents.append(indent)
+
+    if indents:
+        common_following_indent = min(indents)
+        first_indent = len(lines[0]) - len(lines[0].lstrip()) if lines[0].strip() else 0
+        if first_indent == 0 and common_following_indent > 0:
+            normalized = [lines[0].lstrip()]
+            for line in lines[1:]:
+                if not line.strip():
+                    normalized.append("")
+                else:
+                    normalized.append(
+                        line[common_following_indent:]
+                        if len(line) >= common_following_indent
+                        else line.lstrip()
+                    )
+            lines = normalized
+
+    return textwrap.dedent("\n".join(lines)).strip()
+
+
+def _extract_function_body(code: str, candidate_names: set[str]) -> str:
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return ""
+    lines = code.splitlines()
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and node.name in candidate_names and node.body:
+            start = node.body[0].lineno - 1
+            end = node.body[-1].end_lineno or node.body[-1].lineno
+            body_lines = lines[start:end]
+            indents = [
+                len(line) - len(line.lstrip())
+                for line in body_lines
+                if line.strip()
+            ]
+            indent = min(indents) if indents else 0
+            return "\n".join(line[indent:] if len(line) >= indent else line for line in body_lines).strip()
+    return ""
 
 
 def _looks_like_python_code_line(line: str) -> bool:

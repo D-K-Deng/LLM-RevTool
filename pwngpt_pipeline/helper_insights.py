@@ -25,8 +25,14 @@ def build_helper_insights(
 
     return {
         "challenge_class": challenge_class,
+        "challenge_family": challenge_family_for_class(challenge_class),
         "recommended_methods": recommended_methods_for_class(challenge_class),
         "prompt_warnings": prompt_warnings_for_class(challenge_class, protections),
+        "recommended_local_tools": recommended_tools_for_class(challenge_class),
+        "recommended_preruns": recommended_preruns_for_class(challenge_class),
+        "runtime_hints": runtime_hints_for_class(challenge_class, interesting_strings, exports),
+        "completion_requirements": completion_requirements_for_class(challenge_class),
+        "bootstrap_bundle": bootstrap_bundle_for_class(challenge_class),
         "candidate_inputs": extract_candidate_inputs(interesting_strings),
         "candidate_offsets": candidate_offsets_for_class(challenge_class, architecture, strings_blob),
         "candidate_symbols": extract_candidate_symbols(exports, pruned_context),
@@ -128,6 +134,192 @@ def recommended_methods_for_class(challenge_class: str) -> list[str]:
         ],
     }
     return mapping.get(challenge_class, ["derive a concrete exploit from the analysis report and runtime feedback"])
+
+
+def challenge_family_for_class(challenge_class: str) -> str:
+    mapping = {
+        "branch_input": "direct_input_validation",
+        "ret2win": "simple_control_hijack",
+        "split": "simple_rop_argument_call",
+        "callme": "multi_call_rop",
+        "write4": "write_what_where_rop",
+        "badchars": "encoded_write_then_decode_rop",
+        "fluff": "constrained_gadget_rop",
+        "pivot": "stack_pivot_and_dynamic_resolution",
+        "ret2csu": "csu_dispatch_rop",
+        "format_string": "format_string",
+        "stack_overflow": "generic_memory_corruption",
+    }
+    return mapping.get(challenge_class, "unknown")
+
+
+def recommended_tools_for_class(challenge_class: str) -> list[str]:
+    mapping = {
+        "branch_input": [
+            "strings_search",
+            "run_head",
+            "run_with_stdin",
+        ],
+        "ret2win": [
+            "readelf_symbols",
+            "gadget_search(pop rdi / ret / leave / ret as needed)",
+            "run_head",
+        ],
+        "split": [
+            "strings_search(/bin/cat|flag)",
+            "readelf_symbols(print_file|system|main)",
+            "gadget_search(pop rdi)",
+        ],
+        "callme": [
+            "readelf_symbols(callme_one|callme_two|callme_three|useful)",
+            "gadget_search(pop rdi|pop rsi|pop rdx)",
+            "nearby_files",
+        ],
+        "write4": [
+            "readelf_sections",
+            "gadget_search(mov qword ptr [...], ...)",
+            "readelf_symbols(print_file|useful)",
+        ],
+        "badchars": [
+            "readelf_sections",
+            "gadget_search(xor byte ptr [...])",
+            "gadget_search(mov qword ptr [...], ...)",
+        ],
+        "fluff": [
+            "readelf_sections",
+            "readelf_symbols(useful|print_file)",
+            "gadget_search(xlat|bextr|stos)",
+        ],
+        "pivot": [
+            "readelf_symbols(foothold|ret2win|useful|main)",
+            "readelf_relocs",
+            "gadget_search(xchg rsp,rax|pop rax)",
+            "nearby_files",
+        ],
+        "ret2csu": [
+            "symbol_disasm(__libc_csu_init)",
+            "gadget_search(call qword ptr [r12+rbx*8])",
+            "readelf_symbols(ret2win|win|callme|system)",
+        ],
+        "format_string": [
+            "strings_search(%p|%n|%s)",
+            "readelf_symbols(printf|puts|system)",
+            "run_head",
+        ],
+        "stack_overflow": [
+            "readelf_symbols(main|win|system)",
+            "run_head",
+            "nearby_files",
+        ],
+    }
+    return mapping.get(challenge_class, ["readelf_symbols", "readelf_sections", "run_head"])
+
+
+def recommended_preruns_for_class(challenge_class: str) -> list[str]:
+    mapping = {
+        "direct_input_validation": [],
+        "branch_input": [
+            "capture initial prompt with run_head",
+            "try exact candidate strings only after extracting them from strings/disassembly",
+        ],
+        "pivot": [
+            "capture the leaked pivot address from initial output",
+            "list runtime directory files before assuming helper libraries live next to the binary",
+        ],
+        "ret2csu": [
+            "inspect __libc_csu_init before building the chain",
+        ],
+        "fluff": [
+            "inspect useful gadgets before choosing a constrained-write strategy",
+        ],
+    }
+    return mapping.get(challenge_class, ["capture startup output before guessing interaction"])
+
+
+def runtime_hints_for_class(
+    challenge_class: str,
+    interesting_strings: list[str],
+    exports: list[str],
+) -> list[str]:
+    hints = []
+    export_set = {item.lower() for item in exports}
+    strings_blob = "\n".join(interesting_strings).lower()
+    if ".so" in strings_blob or "foothold" in export_set or challenge_class in {"pivot", "callme"}:
+        hints.append("This challenge may depend on sidecar shared libraries or helper files in the runtime directory.")
+    if "flag.txt" in strings_blob or "print_file" in export_set:
+        hints.append("Look for flag.txt or print_file-related file access; the target may expect a runtime cwd with helper files.")
+    if challenge_class in {"pivot", "ret2csu"}:
+        hints.append("Do not guess gadgets from memory; inspect useful gadgets / __libc_csu_init / relocations first.")
+    return hints
+
+
+def bootstrap_bundle_for_class(challenge_class: str) -> dict[str, list[dict[str, object]]]:
+    base_tools = [
+        {"tool": "readelf_sections", "args": {}},
+        {"tool": "readelf_relocs", "args": {}},
+        {"tool": "readelf_symbols", "args": {"pattern": "main|win|ret|foothold|print_file|system|call|pivot|useful|csu"}},
+    ]
+    base_commands = [
+        {"command": "file_info", "args": {}},
+        {"command": "nearby_files", "args": {}},
+        {"command": "ldd", "args": {}},
+        {"command": "run_head", "args": {"timeout": 2}},
+    ]
+    extras: dict[str, list[dict[str, object]]] = {"tool_requests": [], "command_requests": []}
+
+    if challenge_class == "pivot":
+        extras["tool_requests"] = [
+            {"tool": "gadget_search", "args": {"needle": "xchg rsp,rax"}},
+            {"tool": "gadget_search", "args": {"needle": "pop rax"}},
+            {"tool": "readelf_symbols", "args": {"pattern": "foothold|ret2win|useful|main"}},
+        ]
+    elif challenge_class == "ret2csu":
+        extras["tool_requests"] = [
+            {"tool": "symbol_disasm", "args": {"symbol": "__libc_csu_init"}},
+            {"tool": "gadget_search", "args": {"needle": "call qword ptr [r12+rbx*8]"}},
+            {"tool": "readelf_symbols", "args": {"pattern": "ret2win|win|system|call"}},
+        ]
+    elif challenge_class == "fluff":
+        extras["tool_requests"] = [
+            {"tool": "gadget_search", "args": {"needle": "xlat"}},
+            {"tool": "gadget_search", "args": {"needle": "bextr"}},
+            {"tool": "gadget_search", "args": {"needle": "stos"}},
+        ]
+    elif challenge_class in {"write4", "badchars"}:
+        extras["tool_requests"] = [
+            {"tool": "gadget_search", "args": {"needle": "mov qword ptr"}},
+            {"tool": "gadget_search", "args": {"needle": "xor byte ptr"}},
+            {"tool": "readelf_symbols", "args": {"pattern": "print_file|useful"}},
+        ]
+
+    return {
+        "tool_requests": base_tools + extras["tool_requests"],
+        "command_requests": base_commands + extras["command_requests"],
+    }
+
+
+def completion_requirements_for_class(challenge_class: str) -> list[str]:
+    mapping = {
+        "pivot": [
+            "use the leaked pivot address from startup output",
+            "send a first-stage chain that pivots execution into attacker-controlled memory",
+            "resolve ret2win through foothold_function / libpivot rather than assuming ret2win is in the main binary",
+            "send the later-stage payload(s) needed to actually call ret2win",
+            "print final process output after the last stage",
+        ],
+        "ret2csu": [
+            "identify and use the two __libc_csu_init gadgets",
+            "set up the indirect call arguments through the CSU sequence",
+            "print final process output after the target call",
+        ],
+        "fluff": [
+            "build the constrained write primitive",
+            "write flag.txt into writable memory",
+            "call print_file(pointer_to_flag)",
+            "print final process output",
+        ],
+    }
+    return mapping.get(challenge_class, [])
 
 
 def prompt_warnings_for_class(challenge_class: str, protections: dict[str, Any]) -> list[str]:

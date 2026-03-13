@@ -25,6 +25,10 @@ class ExploitVerifier:
         patterns = [re.compile(p) for p in _merge_success_patterns(success_regex, self.config.success_regex)]
         env = os.environ.copy()
         env["TARGET_BINARY"] = str(binary_path.resolve())
+        runtime_cwd = _runtime_workdir_for_binary(binary_path)
+        env["TARGET_BINARY_DIR"] = str(binary_path.resolve().parent)
+        env["TARGET_RUNTIME_DIR"] = str(runtime_cwd)
+        env["TARGET_CHALLENGE_DIR"] = str(runtime_cwd)
         _augment_runtime_library_path(env, binary_path)
 
         cmd = [
@@ -38,14 +42,12 @@ class ExploitVerifier:
         exit_code = None
         sig = None
         try:
-            runtime_cwd = _runtime_workdir_for_binary(binary_path)
-            proc = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=self.config.verification_timeout_s,
+            proc = _run_exploit_subprocess(
+                cmd=cmd,
+                binary_path=binary_path,
                 env=env,
-                cwd=str(runtime_cwd),
+                cwd=runtime_cwd,
+                timeout_s=self.config.verification_timeout_s,
             )
             stdout = ensure_text(proc.stdout)
             stderr = ensure_text(proc.stderr)
@@ -159,3 +161,37 @@ def _runtime_workdir_for_binary(binary_path: Path) -> Path:
     if download_subdir.exists():
         return download_subdir
     return binary_dir
+
+
+def _run_exploit_subprocess(
+    cmd: list[str],
+    binary_path: Path,
+    env: dict[str, str],
+    cwd: Path,
+    timeout_s: int,
+) -> subprocess.CompletedProcess:
+    proc = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=timeout_s,
+        env=env,
+        cwd=str(cwd),
+    )
+    stderr = ensure_text(proc.stderr)
+    if proc.returncode == 2 and "required: --binary" in stderr:
+        retry_cmd = [
+            cmd[0],
+            cmd[1],
+            "--binary",
+            str(binary_path.resolve()),
+        ]
+        proc = subprocess.run(
+            retry_cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout_s,
+            env=env,
+            cwd=str(cwd),
+        )
+    return proc

@@ -5,6 +5,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from .utils import ensure_text
+
 
 ALLOWED_TOOLS = {
     "symbol_disasm",
@@ -12,6 +14,7 @@ ALLOWED_TOOLS = {
     "strings_search",
     "readelf_symbols",
     "readelf_sections",
+    "readelf_relocs",
 }
 
 ALLOWED_COMMANDS = {
@@ -20,6 +23,9 @@ ALLOWED_COMMANDS = {
     "objdump_disasm",
     "ropgadget",
     "nm_symbols",
+    "run_head",
+    "run_with_stdin",
+    "nearby_files",
 }
 
 
@@ -32,6 +38,7 @@ def build_tool_catalog_text() -> str:
             "- strings_search(pattern): search extracted strings for a regex pattern",
             "- readelf_symbols(pattern): search symbol table / dynamic symbols for a regex pattern",
             "- readelf_sections(): dump ELF section headers",
+            "- readelf_relocs(): dump ELF relocations / PLT-related relocation info",
             "Rules:",
             "- Request at most 3 tools per round",
             "- Use tools only when they can unlock missing concrete information",
@@ -49,6 +56,9 @@ def build_command_catalog_text() -> str:
             "- objdump_disasm(): run `objdump -d -M intel <binary>`",
             "- ropgadget(binary_only=true): run `ROPgadget --binary <binary>` if installed",
             "- nm_symbols(): run `nm -C <binary>`",
+            "- run_head(timeout=2): execute the binary briefly and capture initial stdout/stderr",
+            "- run_with_stdin(input_text='', input_hex='', timeout=2): run once with provided stdin bytes",
+            "- nearby_files(): list files near the binary and in the verifier runtime directory",
             "Rules:",
             "- Request at most 2 commands per round",
             "- Commands are allowlisted wrappers, not arbitrary shell",
@@ -150,6 +160,8 @@ class LocalToolRunner:
             return self._readelf_symbols(binary_path, pattern)
         if tool_name == "readelf_sections":
             return self._readelf_sections(binary_path)
+        if tool_name == "readelf_relocs":
+            return self._readelf_relocs(binary_path)
         raise ValueError(f"unsupported tool: {tool_name}")
 
     def _symbol_disasm(self, binary_path: Path, symbol: str) -> str:
@@ -196,6 +208,10 @@ class LocalToolRunner:
 
     def _readelf_sections(self, binary_path: Path) -> str:
         text = self._run_command(["readelf", "-S", str(binary_path)])
+        return _truncate_text(text, 4000)
+
+    def _readelf_relocs(self, binary_path: Path) -> str:
+        text = self._run_command(["readelf", "-r", str(binary_path)])
         return _truncate_text(text, 4000)
 
     def _run_command(self, argv: list[str]) -> str:
@@ -305,7 +321,70 @@ class LocalCommandRunner:
             return _truncate_text(self._run_command(["ROPgadget", "--binary", str(binary_path)]), 4000)
         if command_name == "nm_symbols":
             return _truncate_text(self._run_command(["nm", "-C", str(binary_path)]), 4000)
+        if command_name == "run_head":
+            timeout = int(args.get("timeout", 2) or 2)
+            return self._run_head(binary_path, timeout)
+        if command_name == "run_with_stdin":
+            timeout = int(args.get("timeout", 2) or 2)
+            input_text = str(args.get("input_text", ""))
+            input_hex = str(args.get("input_hex", ""))
+            return self._run_with_stdin(binary_path, timeout, input_text, input_hex)
+        if command_name == "nearby_files":
+            return self._nearby_files(binary_path)
         raise ValueError(f"unsupported command: {command_name}")
+
+    def _run_head(self, binary_path: Path, timeout_s: int) -> str:
+        runtime_cwd = _runtime_workdir_for_binary(binary_path)
+        try:
+            proc = subprocess.run(
+                [str(binary_path)],
+                capture_output=True,
+                text=True,
+                timeout=timeout_s,
+                cwd=str(runtime_cwd),
+                check=False,
+            )
+            combined = (proc.stdout or "") + ("\n" + proc.stderr if proc.stderr else "")
+            return _truncate_text(combined.strip() or f"[exit_code={proc.returncode}]", 4000)
+        except subprocess.TimeoutExpired as exc:
+            stdout = exc.stdout or ""
+            stderr = exc.stderr or ""
+            combined = ensure_text(stdout) + ("\n" + ensure_text(stderr) if stderr else "")
+            combined = (combined.strip() + "\n[timeout]").strip()
+            return _truncate_text(combined, 4000)
+
+    def _run_with_stdin(
+        self,
+        binary_path: Path,
+        timeout_s: int,
+        input_text: str,
+        input_hex: str,
+    ) -> str:
+        runtime_cwd = _runtime_workdir_for_binary(binary_path)
+        if input_hex.strip():
+            payload = bytes.fromhex(input_hex.strip())
+        else:
+            payload = input_text.encode()
+        try:
+            proc = subprocess.run(
+                [str(binary_path)],
+                input=payload,
+                capture_output=True,
+                timeout=timeout_s,
+                cwd=str(runtime_cwd),
+                check=False,
+            )
+            combined = ensure_text(proc.stdout) + ("\n" + ensure_text(proc.stderr) if proc.stderr else "")
+            output = combined.strip() or f"[exit_code={proc.returncode}]"
+            if proc.returncode != 0:
+                output = f"[exit_code={proc.returncode}]\n{output}"
+            return _truncate_text(output, 4000)
+        except subprocess.TimeoutExpired as exc:
+            stdout = ensure_text(exc.stdout)
+            stderr = ensure_text(exc.stderr)
+            combined = stdout + ("\n" + stderr if stderr else "")
+            combined = (combined.strip() + "\n[timeout]").strip()
+            return _truncate_text(combined, 4000)
 
     def _shell_command(self, binary_path: Path, args: dict) -> str:
         command = str(args.get("command", "")).strip()
@@ -327,6 +406,23 @@ class LocalCommandRunner:
             )
         return _truncate_text(combined.strip() or f"[exit_code={proc.returncode}]", 4000)
 
+    def _nearby_files(self, binary_path: Path) -> str:
+        binary_dir = binary_path.resolve().parent
+        runtime_dir = _runtime_workdir_for_binary(binary_path)
+        sections = [
+            f"binary_dir: {binary_dir}",
+            _list_dir(binary_dir),
+        ]
+        if runtime_dir != binary_dir:
+            sections.extend(
+                [
+                    "",
+                    f"runtime_dir: {runtime_dir}",
+                    _list_dir(runtime_dir),
+                ]
+            )
+        return _truncate_text("\n".join(sections), 4000)
+
     def _run_command(self, argv: list[str]) -> str:
         executable = argv[0]
         if shutil.which(executable) is None:
@@ -336,3 +432,21 @@ class LocalCommandRunner:
             stderr = (proc.stderr or proc.stdout or "").strip()
             raise RuntimeError(stderr or f"{executable} exited with code {proc.returncode}")
         return proc.stdout
+
+
+def _runtime_workdir_for_binary(binary_path: Path) -> Path:
+    binary_dir = binary_path.resolve().parent
+    project_root = binary_dir.parent.parent
+    download_subdir = project_root / "challenges" / "downloads" / binary_path.name.removeprefix("rop_")
+    if download_subdir.exists():
+        return download_subdir
+    return binary_dir
+
+
+def _list_dir(path: Path) -> str:
+    if not path.exists():
+        return "<missing>"
+    entries = []
+    for child in sorted(path.iterdir())[:80]:
+        entries.append(child.name + ("/" if child.is_dir() else ""))
+    return "\n".join(entries) if entries else "<empty>"
