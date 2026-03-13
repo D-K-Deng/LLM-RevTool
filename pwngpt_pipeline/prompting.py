@@ -154,6 +154,11 @@ def build_body_generation_prompt(
         }}
 
         Each entry in `body_lines` must be one Python statement line that belongs inside that function body.
+        Each item must be a complete single-line Python statement.
+        Do not split one statement across multiple items.
+        Do not use comments.
+        Do not use markdown.
+        Keep `body_lines` short and concrete.
         Do not define `main`, `run_exploit`, argparse, or `if __name__ == '__main__'`.
         Do not return prose, bullets, markdown, or fenced code blocks.
 

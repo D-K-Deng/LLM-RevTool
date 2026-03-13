@@ -73,7 +73,7 @@ class LLMClient:
         payload = {
             "contents": [{"role": "user", "parts": [{"text": prompt}]}],
             "generationConfig": {
-                "temperature": self.config.temperature,
+                "temperature": self._temperature_for_purpose(purpose),
                 "topP": self.config.top_p,
                 "maxOutputTokens": self._max_output_tokens_for_purpose(purpose),
             },
@@ -108,7 +108,7 @@ class LLMClient:
             "messages": messages,
             "max_tokens": self._max_output_tokens_for_purpose(purpose),
         }
-        payload.update(self._openai_sampling_payload(model))
+        payload.update(self._openai_sampling_payload(model, purpose))
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
@@ -122,14 +122,24 @@ class LLMClient:
             provider_name="OpenAI-compatible",
         )
 
-    def _openai_sampling_payload(self, model: str) -> dict:
+    def _openai_sampling_payload(self, model: str, purpose: str) -> dict:
         normalized = model.strip().lower()
+        temperature = self._temperature_for_purpose(purpose)
         if "anthropic" in normalized or "claude" in normalized:
-            return {"temperature": self.config.temperature}
+            return {"temperature": temperature}
         return {
-            "temperature": self.config.temperature,
+            "temperature": temperature,
             "top_p": self.config.top_p,
         }
+
+    def _temperature_for_purpose(self, purpose: str) -> float:
+        if purpose == "reflection":
+            return self.config.reflection_temperature
+        if purpose == "format_repair":
+            return self.config.format_repair_temperature
+        if purpose == "scaffold":
+            return self.config.scaffold_temperature
+        return self.config.temperature
 
     def _max_output_tokens_for_purpose(self, purpose: str) -> int:
         if purpose == "reflection":

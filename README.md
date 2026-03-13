@@ -118,8 +118,14 @@ PWNGPT_MAX_OUTPUT_TOKENS=8192
 PWNGPT_REFLECTION_MAX_OUTPUT_TOKENS=2048
 PWNGPT_REQUEST_TIMEOUT_S=180
 PWNGPT_REFLECTION_REQUEST_TIMEOUT_S=60
+PWNGPT_SCAFFOLD_TEMPERATURE=0.1
+PWNGPT_FORMAT_REPAIR_TEMPERATURE=0.0
+PWNGPT_REFLECTION_TEMPERATURE=0.1
 PWNGPT_MAX_INNER_ROUNDS_PER_ATTEMPT=4
+PWNGPT_MAX_GENERATION_ATTEMPTS_PER_ROUND=8
 ```
+
+`PWNGPT_MAX_GENERATION_ATTEMPTS_PER_ROUND` caps how many invalid drafts the solver will tolerate before it gives up on producing one verified round. Only verification outcomes consume a round; pure format or generation failures stay within the same logical round.
 
 The OpenAI-compatible client assumes the endpoint is:
 
@@ -164,6 +170,9 @@ Token budgeting:
 - `PWNGPT_REFLECTION_MAX_OUTPUT_TOKENS`: reflection / tool-planning output budget
 - `PWNGPT_REQUEST_TIMEOUT_S`: timeout for main exploit-generation / format-repair requests
 - `PWNGPT_REFLECTION_REQUEST_TIMEOUT_S`: timeout for reflection / tool-planning requests
+- `PWNGPT_SCAFFOLD_TEMPERATURE`: lower temperature used for scaffold-family body generation
+- `PWNGPT_FORMAT_REPAIR_TEMPERATURE`: low temperature used for syntax / format repair
+- `PWNGPT_REFLECTION_TEMPERATURE`: temperature used for reflection / tool planning
 
 Recommended default:
 
@@ -171,6 +180,9 @@ Recommended default:
 - keep `PWNGPT_REFLECTION_MAX_OUTPUT_TOKENS` lower, for example `2048`
 - keep `PWNGPT_REQUEST_TIMEOUT_S` higher for Gemini main generations, for example `180`
 - keep `PWNGPT_REFLECTION_REQUEST_TIMEOUT_S` lower, for example `60`
+- keep `PWNGPT_SCAFFOLD_TEMPERATURE` low, for example `0.1`
+- keep `PWNGPT_FORMAT_REPAIR_TEMPERATURE` near `0.0`
+- keep `PWNGPT_REFLECTION_TEMPERATURE` low, for example `0.1`
 
 Local tool layer:
 

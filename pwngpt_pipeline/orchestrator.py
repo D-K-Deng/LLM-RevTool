@@ -156,19 +156,32 @@ class SolveOrchestrator:
             attempt_tool_results_text = tool_results_text
             attempt_exploit_plan_text = exploit_plan_text
 
-            for round_idx in range(1, inner_rounds + 1):
+            verified_rounds = 0
+            generation_attempts = 0
+            generation_budget = inner_rounds * max(
+                1, self.config.max_generation_attempts_per_round
+            )
+
+            while verified_rounds < inner_rounds and generation_attempts < generation_budget:
+                round_idx = verified_rounds + 1
+                generation_attempts += 1
                 round_dir = attempt_dir / f"round_{round_idx:02d}"
                 ensure_dir(round_dir)
                 generation_payload = {}
+                draft_idx = generation_attempts
+                generation_label = (
+                    f"[solving] {binary_path.name}: attempt {attempt} round {round_idx} "
+                    f"draft {draft_idx}"
+                )
 
                 try:
                     print(
-                        f"[solving] {binary_path.name}: attempt {attempt} round {round_idx} llm",
+                        f"{generation_label} llm",
                         flush=True,
                     )
                     if attempt_previous_code or attempt_history:
                         print(
-                            f"[solving] {binary_path.name}: attempt {attempt} round {round_idx} reflection",
+                            f"{generation_label} reflection",
                             flush=True,
                         )
                         attempt_reflection_text = self.generator.reflect(
@@ -335,6 +348,7 @@ class SolveOrchestrator:
                         )
                     generation_payload = generation.to_dict()
                     generation_payload["round"] = round_idx
+                    generation_payload["draft"] = draft_idx
                     write_json(round_dir / "GenerationResult.json", generation_payload)
                     write_json(attempt_dir / "GenerationResult.json", generation_payload)
                     (round_dir / "raw_model_output.txt").write_text(
@@ -373,6 +387,7 @@ class SolveOrchestrator:
                             generation = repaired
                             generation_payload = generation.to_dict()
                             generation_payload["round"] = round_idx
+                            generation_payload["draft"] = draft_idx
                             write_json(round_dir / "GenerationResult.json", generation_payload)
                             write_json(attempt_dir / "GenerationResult.json", generation_payload)
                             (round_dir / "raw_model_output.txt").write_text(
@@ -397,6 +412,7 @@ class SolveOrchestrator:
                         issue = {
                             "attempt": attempt,
                             "round": round_idx,
+                            "draft": draft_idx,
                             "status": "generation_rejected",
                             "error": code_quality_issue,
                         }
@@ -404,13 +420,14 @@ class SolveOrchestrator:
                         write_json(attempt_dir / "GenerationFailure.json", issue)
                         attempt_logs.append(issue)
                         print(
-                            f"[solving] {binary_path.name}: attempt {attempt} round {round_idx} rejected - {code_quality_issue}",
+                            f"{generation_label} rejected - {code_quality_issue}",
                             flush=True,
                         )
                         attempt_history.append(
                             {
                                 "attempt": attempt,
                                 "round": round_idx,
+                                "draft": draft_idx,
                                 "phase": "generation",
                                 "status": "rejected",
                                 "failure_reason": code_quality_issue,
@@ -421,6 +438,7 @@ class SolveOrchestrator:
                         attempt_feedback = {
                             "attempt": attempt,
                             "round": round_idx,
+                            "draft": draft_idx,
                             "status": "generation_rejected",
                             "error": code_quality_issue,
                             "instruction": (
@@ -434,6 +452,7 @@ class SolveOrchestrator:
                     err = {
                         "attempt": attempt,
                         "round": round_idx,
+                        "draft": draft_idx,
                         "status": "generation_failed",
                         "error": str(exc),
                         "traceback": traceback.format_exc(limit=3),
@@ -442,13 +461,14 @@ class SolveOrchestrator:
                     write_json(attempt_dir / "GenerationFailure.json", err)
                     attempt_logs.append(err)
                     print(
-                        f"[solving] {binary_path.name}: attempt {attempt} round {round_idx} generation failed - {exc}",
+                        f"{generation_label} generation failed - {exc}",
                         flush=True,
                     )
                     attempt_history.append(
                         {
                             "attempt": attempt,
                             "round": round_idx,
+                            "draft": draft_idx,
                             "phase": "generation",
                             "status": "failed",
                             "failure_reason": str(exc),
@@ -459,6 +479,7 @@ class SolveOrchestrator:
                     attempt_feedback = {
                         "attempt": attempt,
                         "round": round_idx,
+                        "draft": draft_idx,
                         "status": "generation_failed",
                         "error": str(exc),
                         "instruction": (
@@ -472,6 +493,7 @@ class SolveOrchestrator:
                     err = {
                         "attempt": attempt,
                         "round": round_idx,
+                        "draft": draft_idx,
                         "status": "unexpected_generation_error",
                         "error": str(exc),
                         "traceback": traceback.format_exc(limit=6),
@@ -480,13 +502,14 @@ class SolveOrchestrator:
                     write_json(attempt_dir / "GenerationFailure.json", err)
                     attempt_logs.append(err)
                     print(
-                        f"[solving] {binary_path.name}: attempt {attempt} round {round_idx} unexpected generation error - {exc}",
+                        f"{generation_label} unexpected generation error - {exc}",
                         flush=True,
                     )
                     attempt_history.append(
                         {
                             "attempt": attempt,
                             "round": round_idx,
+                            "draft": draft_idx,
                             "phase": "generation",
                             "status": "unexpected_error",
                             "failure_reason": str(exc),
@@ -497,6 +520,7 @@ class SolveOrchestrator:
                     attempt_feedback = {
                         "attempt": attempt,
                         "round": round_idx,
+                        "draft": draft_idx,
                         "status": "unexpected_generation_error",
                         "error": str(exc),
                     }
@@ -516,6 +540,7 @@ class SolveOrchestrator:
                 }
                 ver_payload = ver.to_dict()
                 ver_payload["round"] = round_idx
+                ver_payload["draft"] = draft_idx
                 write_json(round_dir / "VerificationResult.json", ver_payload)
                 write_json(attempt_dir / "VerificationResult.json", ver_payload)
 
@@ -533,6 +558,7 @@ class SolveOrchestrator:
                         generation = repaired
                         generation_payload = generation.to_dict()
                         generation_payload["round"] = round_idx
+                        generation_payload["draft"] = draft_idx
                         generation_payload["runtime_repair_used"] = True
                         write_json(round_dir / "GenerationResult.json", generation_payload)
                         write_json(attempt_dir / "GenerationResult.json", generation_payload)
@@ -565,6 +591,7 @@ class SolveOrchestrator:
                             }
                             ver_payload = ver.to_dict()
                             ver_payload["round"] = round_idx
+                            ver_payload["draft"] = draft_idx
                             ver_payload["runtime_repair_used"] = True
                             write_json(round_dir / "VerificationResult.json", ver_payload)
                             write_json(attempt_dir / "VerificationResult.json", ver_payload)
@@ -574,6 +601,7 @@ class SolveOrchestrator:
                 log_item = {
                     "attempt": attempt,
                     "round": round_idx,
+                    "draft": draft_idx,
                     "generation_used_format_repair": generation_payload.get("used_format_repair", False),
                     "verification_status": ver.status,
                     "failure_reason": ver.failure_reason,
@@ -584,6 +612,7 @@ class SolveOrchestrator:
                     {
                         "attempt": attempt,
                         "round": round_idx,
+                        "draft": draft_idx,
                         "phase": "verification",
                         "status": ver.status,
                         "failure_reason": ver.failure_reason,
@@ -601,12 +630,33 @@ class SolveOrchestrator:
                         f"[solving] {binary_path.name}: solved on attempt {attempt} round {round_idx}",
                         flush=True,
                     )
+                    verified_rounds += 1
                     break
 
                 attempt_feedback = ver.feedback_payload
                 last_error = ver.failure_reason
+                verified_rounds += 1
                 print(
                     f"[solving] {binary_path.name}: attempt {attempt} round {round_idx} failed - {ver.failure_reason}",
+                    flush=True,
+                )
+
+            if not solved and verified_rounds < inner_rounds and generation_attempts >= generation_budget:
+                budget_error = (
+                    f"Generation budget exhausted before reaching {inner_rounds} verified rounds."
+                )
+                last_error = budget_error
+                attempt_logs.append(
+                    {
+                        "attempt": attempt,
+                        "round": verified_rounds + 1,
+                        "draft": generation_attempts,
+                        "status": "generation_budget_exhausted",
+                        "error": budget_error,
+                    }
+                )
+                print(
+                    f"[solving] {binary_path.name}: attempt {attempt} stopped - {budget_error}",
                     flush=True,
                 )
 
@@ -626,6 +676,7 @@ class SolveOrchestrator:
             "attempts_used": attempts_used,
             "max_iterations": iterations,
             "max_inner_rounds_per_attempt": inner_rounds,
+            "max_generation_attempts_per_round": self.config.max_generation_attempts_per_round,
             "elapsed_seconds": round(elapsed, 3),
             "strict_output": strict,
             "enable_pruning": prune,
@@ -701,12 +752,43 @@ def _detect_family_completion_issue(code: str, challenge_class: str | None) -> s
             )
 
     if challenge_class == "ret2csu":
+        missing = []
         if "__libc_csu_init" not in lowered and "csu" not in lowered:
-            return "ret2csu-family exploit is incomplete: it does not reference the CSU dispatcher gadgets."
+            missing.append("CSU dispatcher gadgets")
+        if ".plt['ret2win']" in lowered or '.plt["ret2win"]' in lowered:
+            missing.append("real ret2win symbol usage (not ret2win@plt)")
+        required_constants = (
+            "0xdeadbeefdeadbeef",
+            "0xcafebabecafebabe",
+            "0xd00df00dd00df00d",
+        )
+        if not all(token in lowered for token in required_constants):
+            missing.append("exact 64-bit ret2csu constants")
+        if send_ops < 1:
+            missing.append("payload delivery")
+        if missing:
+            return (
+                "ret2csu-family exploit is incomplete: missing "
+                + ", ".join(missing)
+                + ". Use the two CSU gadgets, the exact 64-bit constants, and the real ret2win symbol."
+            )
 
     if challenge_class == "fluff":
+        missing = []
         if "print_file" not in lowered or "flag.txt" not in lowered:
-            return "Fluff-family exploit is incomplete: it should write flag.txt into memory and call print_file."
+            missing.append("print_file(pointer_to_flag)")
+        if not any(token in lowered for token in ("xlat", "bextr", "stos")):
+            missing.append("constrained write primitive (xlat/bextr/stos)")
+        if "bss" not in lowered and "writable" not in lowered:
+            missing.append("writable-memory target")
+        if send_ops < 1:
+            missing.append("payload delivery")
+        if missing:
+            return (
+                "Fluff-family exploit is incomplete: missing "
+                + ", ".join(missing)
+                + ". It should write flag.txt into writable memory with the constrained gadget sequence and then call print_file."
+            )
 
     return None
 

@@ -112,7 +112,7 @@ def recommended_methods_for_class(challenge_class: str) -> list[str]:
         "fluff": [
             "this is a constrained write-what-where ROP task; use pwntools and inspect useful gadgets/functions first",
             "recover how to load controlled values into registers from useful gadgets or helper functions",
-            "write flag.txt into writable memory, then call print_file(pointer)",
+            "write flag.txt into writable memory byte-by-byte using the constrained gadget sequence, then call print_file(pointer)",
         ],
         "pivot": [
             "this is a stack pivot challenge; use pwntools and inspect foothold_function, ret2win, and pivot gadgets",
@@ -123,6 +123,7 @@ def recommended_methods_for_class(challenge_class: str) -> list[str]:
             "this is a ret2csu challenge; use pwntools and inspect __libc_csu_init gadgets",
             "find the two CSU gadgets that control rbx/rbp/r12/r13/r14/r15 and perform the indirect call",
             "use the CSU sequence to set up arguments and call the target function deterministically",
+            "do not assume ret2win lives in the PLT; prefer the real main-binary symbol and the exact 64-bit constants expected by the challenge family",
         ],
         "format_string": [
             "identify whether you need a leak, write, or both",
@@ -310,10 +311,11 @@ def completion_requirements_for_class(challenge_class: str) -> list[str]:
         "ret2csu": [
             "identify and use the two __libc_csu_init gadgets",
             "set up the indirect call arguments through the CSU sequence",
+            "use the exact 64-bit constants required by the challenge family and call the real ret2win symbol, not ret2win@plt",
             "print final process output after the target call",
         ],
         "fluff": [
-            "build the constrained write primitive",
+            "build the constrained write primitive with xlat/bextr/stos or equivalent helper gadgets",
             "write flag.txt into writable memory",
             "call print_file(pointer_to_flag)",
             "print final process output",

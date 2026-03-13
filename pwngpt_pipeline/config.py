@@ -24,11 +24,15 @@ class PipelineConfig:
     retry_base_delay_s: float = 1.0
     retry_max_delay_s: float = 20.0
     temperature: float = 0.2
+    scaffold_temperature: float = 0.1
+    format_repair_temperature: float = 0.0
+    reflection_temperature: float = 0.1
     top_p: float = 0.95
     max_output_tokens: int = 8192
     reflection_max_output_tokens: int = 2048
     max_iterations: int = 6
     max_inner_rounds_per_attempt: int = 4
+    max_generation_attempts_per_round: int = 8
     allow_unsafe_model_commands: bool = False
     verification_timeout_s: int = 20
     python_executable: str = sys.executable
@@ -56,9 +60,15 @@ class PipelineConfig:
             reflection_openai_compat_model=os.getenv("REFLECTION_OPENAI_COMPAT_MODEL", "").strip(),
             request_timeout_s=int(os.getenv("PWNGPT_REQUEST_TIMEOUT_S", "180")),
             reflection_request_timeout_s=int(os.getenv("PWNGPT_REFLECTION_REQUEST_TIMEOUT_S", "60")),
+            scaffold_temperature=float(os.getenv("PWNGPT_SCAFFOLD_TEMPERATURE", "0.1")),
+            format_repair_temperature=float(os.getenv("PWNGPT_FORMAT_REPAIR_TEMPERATURE", "0.0")),
+            reflection_temperature=float(os.getenv("PWNGPT_REFLECTION_TEMPERATURE", "0.1")),
             max_output_tokens=int(os.getenv("PWNGPT_MAX_OUTPUT_TOKENS", "8192")),
             reflection_max_output_tokens=int(os.getenv("PWNGPT_REFLECTION_MAX_OUTPUT_TOKENS", "2048")),
             max_inner_rounds_per_attempt=int(os.getenv("PWNGPT_MAX_INNER_ROUNDS_PER_ATTEMPT", "4")),
+            max_generation_attempts_per_round=int(
+                os.getenv("PWNGPT_MAX_GENERATION_ATTEMPTS_PER_ROUND", "8")
+            ),
             allow_unsafe_model_commands=_env_bool("PWNGPT_ALLOW_UNSAFE_MODEL_COMMANDS", False),
             python_executable=python_executable,
             artifact_root=Path(artifact_root),
@@ -78,10 +88,14 @@ class PipelineConfig:
         reflection_openai_compat_model: Optional[str] = None,
         request_timeout_s: Optional[int] = None,
         reflection_request_timeout_s: Optional[int] = None,
+        scaffold_temperature: Optional[float] = None,
+        format_repair_temperature: Optional[float] = None,
+        reflection_temperature: Optional[float] = None,
         max_output_tokens: Optional[int] = None,
         reflection_max_output_tokens: Optional[int] = None,
         max_iterations: Optional[int] = None,
         max_inner_rounds_per_attempt: Optional[int] = None,
+        max_generation_attempts_per_round: Optional[int] = None,
         allow_unsafe_model_commands: Optional[bool] = None,
         max_retries: Optional[int] = None,
         strict_output: Optional[bool] = None,
@@ -111,6 +125,12 @@ class PipelineConfig:
             self.request_timeout_s = request_timeout_s
         if reflection_request_timeout_s is not None:
             self.reflection_request_timeout_s = reflection_request_timeout_s
+        if scaffold_temperature is not None:
+            self.scaffold_temperature = scaffold_temperature
+        if format_repair_temperature is not None:
+            self.format_repair_temperature = format_repair_temperature
+        if reflection_temperature is not None:
+            self.reflection_temperature = reflection_temperature
         if max_output_tokens is not None:
             self.max_output_tokens = max_output_tokens
         if reflection_max_output_tokens is not None:
@@ -119,6 +139,8 @@ class PipelineConfig:
             self.max_iterations = max_iterations
         if max_inner_rounds_per_attempt is not None:
             self.max_inner_rounds_per_attempt = max_inner_rounds_per_attempt
+        if max_generation_attempts_per_round is not None:
+            self.max_generation_attempts_per_round = max_generation_attempts_per_round
         if allow_unsafe_model_commands is not None:
             self.allow_unsafe_model_commands = allow_unsafe_model_commands
         if max_retries is not None:

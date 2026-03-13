@@ -58,7 +58,7 @@ class ExploitGenerator:
             exploit_plan_text=exploit_plan_text,
             template_path=self.prompt_template_path,
         )
-        raw = self.client.generate_text(prompt, purpose="primary").text
+        raw = self.client.generate_text(prompt, purpose="scaffold").text
 
         code = _extract_python_from_any(raw)
         if code:
@@ -146,6 +146,9 @@ class ExploitGenerator:
                 '  "body_lines": ["stmt1", "stmt2"]\n'
                 "}\n"
                 "Each item must be one Python statement line for the body of run_exploit(binary_path, runtime_dir, elf).\n"
+                "Each item must be a complete single-line statement.\n"
+                "Do not split one statement across multiple items.\n"
+                "Do not use comments.\n"
                 "Do not return prose, markdown, or fenced code blocks.\n\n"
                 f"Original output:\n{raw}"
             )
@@ -206,6 +209,9 @@ class ExploitGenerator:
                 '  "body_lines": ["stmt1", "stmt2"]\n'
                 "}\n"
                 "Each item in body_lines must be one valid Python statement line for the body of run_exploit(binary_path, runtime_dir, elf).\n"
+                "Each item must be a complete single-line statement.\n"
+                "Do not split one statement across multiple items.\n"
+                "Do not use comments.\n"
                 "Do not return imports, main(), argparse, __main__, prose, markdown, or fenced code blocks.\n"
                 "Requirements:\n"
                 "- valid Python 3 statements only\n"
@@ -276,6 +282,9 @@ class ExploitGenerator:
                 '  "body_lines": ["stmt1", "stmt2"]\n'
                 "}\n"
                 "Each item in body_lines must be one valid Python statement line for the body of run_exploit(binary_path, runtime_dir, elf).\n"
+                "Each item must be a complete single-line statement.\n"
+                "Do not split one statement across multiple items.\n"
+                "Do not use comments.\n"
                 "Do not return imports, main(), argparse, __main__, prose, markdown, or fenced code blocks.\n"
                 "Preserve the exploit structure where possible and only fix the runtime bug.\n"
                 "Use bytes for pwntools recv/send and avoid f-strings.\n\n"
@@ -632,16 +641,19 @@ def _normalize_scaffold_indentation(body: str) -> str:
     if not lines:
         return ""
 
-    indents = []
+    following_indents = []
+    has_zero_indent_following = False
     for line in lines[1:]:
         if not line.strip():
             continue
         indent = len(line) - len(line.lstrip())
         if indent > 0:
-            indents.append(indent)
+            following_indents.append(indent)
+        else:
+            has_zero_indent_following = True
 
-    if indents:
-        common_following_indent = min(indents)
+    if following_indents and not has_zero_indent_following:
+        common_following_indent = min(following_indents)
         first_indent = len(lines[0]) - len(lines[0].lstrip()) if lines[0].strip() else 0
         if first_indent == 0 and common_following_indent > 0:
             normalized = [lines[0].lstrip()]
