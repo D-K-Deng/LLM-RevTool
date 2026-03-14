@@ -433,10 +433,6 @@ Fix options:
 - install `pwntools` in WSL
 - rerun with the current codebase, which now pushes the model toward standard-library-only scripts
 
-### `wsl: Failed to mount Z:\`
-
-This is usually non-blocking if your project drive still mounts and commands keep running.
-
 ### PowerShell can import the package, but solving fails
 
 Use WSL `python3`, not Windows `python`, for ELF targets.
