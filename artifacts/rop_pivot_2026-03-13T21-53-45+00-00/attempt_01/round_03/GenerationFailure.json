@@ -1,0 +1,7 @@
+{
+  "attempt": 1,
+  "round": 3,
+  "draft": 6,
+  "status": "generation_rejected",
+  "error": "Generated exploit has Python syntax error: '(' was never closed at line 28"
+}

@@ -1,0 +1,25 @@
+{
+  "attempt": 1,
+  "status": "success",
+  "stdout_tail": "[*] Loaded 14 cached gadgets for '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_split'\n[x] Starting local process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_split'\n[+] Starting local process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_split': pid 690\n[x] Receiving all data\n[x] Receiving all data: 0B\n[x] Receiving all data: 87B\n[x] Receiving all data: 120B\n[+] Receiving all data: Done (120B)\n[*] Process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_split' stopped with exit code -11 (SIGSEGV) (pid 690)\nsplit by ROP Emporium\nx86_64\n\nContriving a reason to ask user for data...\n> Thank you!\nROPE{a_placeholder_32byte_flag!}\n\n",
+  "stderr_tail": "",
+  "exit_code": 0,
+  "signal": null,
+  "timeout": false,
+  "artifacts": {
+    "exploit_path": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/rop_split_2026-03-13T21-46-15+00-00/attempt_01/exploit.py",
+    "attempt_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/rop_split_2026-03-13T21-46-15+00-00/attempt_01"
+  },
+  "success_reason": "Matched success regex in process output.",
+  "failure_reason": "",
+  "feedback_payload": {
+    "status": "success",
+    "exit_code": 0,
+    "signal": null,
+    "timeout": false,
+    "stdout_tail": "[*] Loaded 14 cached gadgets for '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_split'\n[x] Starting local process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_split'\n[+] Starting local process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_split': pid 690\n[x] Receiving all data\n[x] Receiving all data: 0B\n[x] Receiving all data: 87B\n[x] Receiving all data: 120B\n[+] Receiving all data: Done (120B)\n[*] Process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_split' stopped with exit code -11 (SIGSEGV) (pid 690)\nsplit by ROP Emporium\nx86_64\n\nContriving a reason to ask user for data...\n> Thank you!\nROPE{a_placeholder_32byte_flag!}\n\n",
+    "stderr_tail": "",
+    "failure_reason": "",
+    "success_reason": "Matched success regex in process output."
+  }
+}

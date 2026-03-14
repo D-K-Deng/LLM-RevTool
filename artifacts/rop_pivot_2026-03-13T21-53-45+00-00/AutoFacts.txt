@@ -1,0 +1,8 @@
+- runtime_dir=/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/downloads/pivot
+- A sidecar library libpivot.so exists in the runtime directory.
+- A flag.txt file exists in the runtime directory.
+- foothold_function is imported through PLT/GOT; it is not the final target.
+- pop rax; ret is available at 0x4009bb.
+- xchg rsp, rax; ret is available at 0x4009bd.
+- The binary leaks a pivot address at startup before asking for the first ROP chain.
+- The binary expects a first-stage ROP chain followed by a separate stack-smash payload.

@@ -1,0 +1,7 @@
+{
+  "attempt": 1,
+  "round": 1,
+  "draft": 2,
+  "status": "generation_rejected",
+  "error": "Fluff-family exploit is incomplete: missing print_file(pointer_to_flag), payload delivery. It should write flag.txt into writable memory with the constrained gadget sequence and then call print_file."
+}

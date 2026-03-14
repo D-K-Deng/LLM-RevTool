@@ -1,0 +1,8 @@
+{
+  "attempt": 1,
+  "round": 2,
+  "draft": 3,
+  "status": "generation_failed",
+  "error": "No scaffolded body found in model output.",
+  "traceback": "Traceback (most recent call last):\n  File \"/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/pwngpt_pipeline/orchestrator.py\", line 303, in solve\n    generation = self.generator.repair_code_quality(\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/pwngpt_pipeline/generation.py\", line 255, in repair_code_quality\n    raise GenerationParseError(\"Code-quality repair did not return Python code.\")\npwngpt_pipeline.generation.GenerationParseError: Code-quality repair did not return Python code.\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/pwngpt_pipeline/orchestrator.py\", line 327, in solve\n    generation = self.generator.generate_scaffolded(\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/pwngpt_pipeline/generation.py\", line 158, in generate_scaffolded\n    raise GenerationParseError(\"No scaffolded body found in model output.\")\npwngpt_pipeline.generation.GenerationParseError: No scaffolded body found in model output.\n"
+}

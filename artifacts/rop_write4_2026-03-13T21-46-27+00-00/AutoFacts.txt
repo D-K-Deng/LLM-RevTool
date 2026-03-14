@@ -1,0 +1,2 @@
+- runtime_dir=/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/downloads/write4
+- A flag.txt file exists in the runtime directory.

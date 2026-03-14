@@ -1,0 +1,137 @@
+AUTO FACTS
+- runtime_dir=/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/downloads/ret2win
+- A flag.txt file exists in the runtime directory.
+
+RAW EVIDENCE
+TOOL readelf_sections [ok]
+There are 29 section headers, starting at offset 0x1a58:
+
+Section Headers:
+  [Nr] Name              Type             Address           Offset
+       Size              EntSize          Flags  Link  Info  Align
+  [ 0]                   NULL             0000000000000000  00000000
+       0000000000000000  0000000000000000           0     0     0
+  [ 1] .interp           PROGBITS         0000000000400238  00000238
+       000000000000001c  0000000000000000   A       0     0     1
+  [ 2] .note.ABI-tag     NOTE             0000000000400254  00000254
+       0000000000000020  0000000000000000   A       0     0     4
+  [ 3] .note.gnu.bu[...] NOTE             0000000000400274  00000274
+       0000000000000024  0000000000000000   A       0     0     4
+  [ 4] .gnu.hash         GNU_HASH         0000000000400298  00000298
+       0000000000000024  0000000000000000   A       5     0     8
+  [ 5] .dynsym           DYNSYM           00000000004002c0  000002c0
+       00000000000000f0  0000000000000018   A       6     1     8
+  [ 6] .dynstr           STRTAB           00000000004003b0  000003b0
+       0000000000000066  0000000000000000   A       0     0     1
+  [ 7] .gnu.version      VERSYM           0000000000400416  00000416
+       0000000000000014  0000000000000002   A       5     0     2
+  [ 8] .gnu.version_r    VERNEED          0000000000400430  00000430
+       0000000000000020  0000000000000000   A       6     1     8
+  [ 9] .rela.dyn         RELA             0000000000400450  00000450
+       0000000000000048  0000000000000018   A       5     0     8
+  [10] .rela.plt         RELA             0000000000400498  00000498
+       0000000000000090  0000000000000018  AI       5    22     8
+  [11] .init             PROGBITS         0000000000400528  00000528
+       0000000000000017  0000000000000000  AX       0     0     4
+  [12] .plt              PROGBITS         0000000000400540  00000540
+       0000000000000070  0000000000000010  AX       0     0     16
+  [13] .text             PROGBITS         00000000004005b0  000005b0
+       0000000000000242  0000000000000000  AX       0     0     16
+  [14] .fini             PROGBITS         00000000004007f4  000007f4
+       0000000000000009  0000000000000000  AX       0     0     4
+  [15] .rodata           PROGBITS         0000000000400800  00000800
+       0000000000000155  0000000000000000   A       0     0     8
+  [16] .eh_frame_hdr     PROGBITS         0000000000400958  00000958
+       000000000000004c  0000000000000000   A       0     0     4
+  [17] .eh_frame         PROGBITS         00000000004009a8  000009a8
+       0000000000000140  0000000000000000   A       0     0     8
+  [18] .init_array       INIT_ARRAY       0000000000600e10  00000e10
+       0000000000000008  0000000000000008  WA       0     0     8
+  [19] .fini_array       FINI_ARRAY       0000000000600e18  00000e18
+       0000000000000008  0000000000000008  WA       0     0     8
+  [20] .dynamic          DYNAMIC          0000000000600e20  00000e20
+       00000000000001d0  0000000000000010  WA       6     0     8
+  [21] .got              PROGBITS         0000000000600ff0  00000ff0
+       0000000000000010  0000000000000008  WA       0     0     8
+  [22] .got.plt          PROGBITS         0000000000601000  00001000
+       0000000000000048  0000000000000008  WA       0     0     8
+  [23] .data             PROGBITS         0000000000601048  00001048
+       0000000000000010  0000000000000000  WA       0     0     8
+  [24] .bss              NOBITS           0000000000601058  00001058
+       0000000000000010  0000000000000000  WA       0     0     8
+  [25] .comment          PROGBITS         0000000000000000  00001058
+       0000000000000029  0000000000000001  MS       0     0     1
+  [26] .symtab           SYMTAB           0000000000000000  00001088
+       0000000000000678  0000000000000018          27    45     8
+  [27] .strtab           STRTAB           0000000000000000  00001700
+       0000000000000250  0000000000000000           0     0     1
+  [28] .s
+...[truncated]
+
+TOOL readelf_relocs [ok]
+Relocation section '.rela.dyn' at offset 0x450 contains 3 entries:
+  Offset          Info           Type           Sym. Value    Sym. Name + Addend
+000000600ff0  000600000006 R_X86_64_GLOB_DAT 0000000000000000 __libc_start_main@GLIBC_2.2.5 + 0
+000000600ff8  000700000006 R_X86_64_GLOB_DAT 0000000000000000 __gmon_start__ + 0
+000000601058  000900000005 R_X86_64_COPY     0000000000601058 stdout@GLIBC_2.2.5 + 0
+
+Relocation section '.rela.plt' at offset 0x498 contains 6 entries:
+  Offset          Info           Type           Sym. Value    Sym. Name + Addend
+000000601018  000100000007 R_X86_64_JUMP_SLO 0000000000000000 puts@GLIBC_2.2.5 + 0
+000000601020  000200000007 R_X86_64_JUMP_SLO 0000000000000000 system@GLIBC_2.2.5 + 0
+000000601028  000300000007 R_X86_64_JUMP_SLO 0000000000000000 printf@GLIBC_2.2.5 + 0
+000000601030  000400000007 R_X86_64_JUMP_SLO 0000000000000000 memset@GLIBC_2.2.5 + 0
+000000601038  000500000007 R_X86_64_JUMP_SLO 0000000000000000 read@GLIBC_2.2.5 + 0
+000000601040  000800000007 R_X86_64_JUMP_SLO 0000000000000000 setvbuf@GLIBC_2.2.5 + 0
+
+TOOL readelf_symbols [ok]
+args: {'pattern': 'main|win|ret|foothold|print_file|system|call|pivot|useful|csu'}
+2: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND system@GLIBC_2.2.5 (2)
+     6: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND __libc_start_main@GLIBC_2.2.5 (2)
+    34: 0000000000000000     0 FILE    LOCAL  DEFAULT  ABS ret2win.c
+    36: 0000000000400756    27 FUNC    LOCAL  DEFAULT   13 ret2win
+    45: 00000000004007f0     2 FUNC    GLOBAL DEFAULT   13 __libc_csu_fini
+    51: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND system@@GLIBC_2.2.5
+    55: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND __libc_start_main@@GLIBC_2.2.5
+    60: 0000000000400780   101 FUNC    GLOBAL DEFAULT   13 __libc_csu_init
+    65: 0000000000400697    81 FUNC    GLOBAL DEFAULT   13 main
+
+COMMAND file_info [ok]
+/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_ret2win: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 3.2.0, BuildID[sha1]=19abc0b3bb228157af55b8e16af7316d54ab0597, not stripped
+
+COMMAND nearby_files [ok]
+binary_dir: /mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin
+branch_puzzle
+flag.txt
+format_string
+integer_edge
+rop_badchars
+rop_callme
+rop_fluff
+rop_pivot
+rop_ret2csu
+rop_ret2win
+rop_split
+rop_write4
+stack_overflow
+
+runtime_dir: /mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/downloads/ret2win
+flag.txt
+ret2win
+
+COMMAND ldd [ok]
+linux-vdso.so.1 (0x00007fff517f2000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x000075d7a2400000)
+	/lib64/ld-linux-x86-64.so.2 (0x000075d7a2707000)
+
+COMMAND run_head [ok]
+args: {'timeout': 2}
+ret2win by ROP Emporium
+x86_64
+
+For my first trick, I will attempt to fit 56 bytes of user input into 32 bytes of stack buffer!
+What could possibly go wrong?
+You there, may I have your input please? And don't worry about null bytes, we're using read()!
+
+>
+[timeout]

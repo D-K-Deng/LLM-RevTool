@@ -1,0 +1,28 @@
+{
+  "tool_results": [
+    {
+      "tool": "gadget_search",
+      "status": "error",
+      "args": {
+        "needle": "pop rdi; ret"
+      },
+      "error": "gadget/instruction not found: pop rdi; ret"
+    },
+    {
+      "tool": "readelf_symbols",
+      "status": "error",
+      "args": {
+        "pattern": "ret2win",
+        "binary_path": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/downloads/pivot/libpivot.so"
+      },
+      "error": "no symbols matched pattern: ret2win"
+    },
+    {
+      "tool": "objdump_disasm",
+      "status": "rejected",
+      "error": "tool is not in the allowlist"
+    }
+  ],
+  "command_results": [],
+  "shell_results": []
+}

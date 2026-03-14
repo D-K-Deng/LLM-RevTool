@@ -1,0 +1,5 @@
+SECTION A: Failure Diagnosis
+
+The exploit failed with "Incorrect parameters" and exited with code 0. This indicates that the `ret2win` function was likely called, but with the wrong arguments.
+
+1.  **Incorrect Argument Setup:** The `__libc_csu_init` gadget sequence sets `edi=r13d`, `rsi=r14`, `

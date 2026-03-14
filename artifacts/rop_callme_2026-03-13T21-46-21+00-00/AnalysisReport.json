@@ -1,0 +1,269 @@
+{
+  "binary_path": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_callme",
+  "binary_name": "rop_callme",
+  "timestamp": "2026-03-13T21:46:21+00:00",
+  "architecture": "amd64",
+  "protections": {
+    "pie": false,
+    "nx": true,
+    "canary": false,
+    "relro": "partial"
+  },
+  "imports": [
+    "(2)",
+    "UND",
+    "__gmon_start__",
+    "__libc_start_main",
+    "callme_one",
+    "callme_three",
+    "callme_two",
+    "exit",
+    "memset",
+    "printf",
+    "puts",
+    "read",
+    "setvbuf"
+  ],
+  "exports": [
+    "__bss_start",
+    "_edata",
+    "_end",
+    "_fini",
+    "_init",
+    "stdout@GLIBC_2.2.5"
+  ],
+  "interesting_strings": [
+    "/lib64/ld-linux-x86-64.so.2",
+    "libcallme.so",
+    "__gmon_start__",
+    "callme_two",
+    "_init",
+    "_fini",
+    "callme_three",
+    "callme_one",
+    "libc.so.6",
+    "exit",
+    "puts",
+    "printf",
+    "memset",
+    "read",
+    "stdout",
+    "setvbuf",
+    "__libc_start_main",
+    "_edata",
+    "__bss_start",
+    "_end",
+    "GLIBC_2.2.5",
+    "AWAVI",
+    "AUATL",
+    "[]A\\A]A^A_",
+    "callme by ROP Emporium",
+    "x86_64",
+    "Exiting",
+    "Hope you read the instructions...",
+    "Thank you!",
+    ";*3$\"",
+    "GCC: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0",
+    "crtstuff.c",
+    "deregister_tm_clones",
+    "__do_global_dtors_aux",
+    "completed.7698",
+    "__do_global_dtors_aux_fini_array_entry",
+    "frame_dummy",
+    "__frame_dummy_init_array_entry",
+    "callme.c",
+    "pwnme",
+    "usefulFunction",
+    "/tmp/ccm874Ag.o",
+    "usefulGadgets",
+    "__FRAME_END__",
+    "__init_array_end",
+    "_DYNAMIC",
+    "__init_array_start",
+    "__GNU_EH_FRAME_HDR",
+    "_GLOBAL_OFFSET_TABLE_",
+    "__libc_csu_fini",
+    "stdout@@GLIBC_2.2.5",
+    "puts@@GLIBC_2.2.5",
+    "printf@@GLIBC_2.2.5",
+    "memset@@GLIBC_2.2.5",
+    "read@@GLIBC_2.2.5",
+    "__libc_start_main@@GLIBC_2.2.5",
+    "__data_start",
+    "__dso_handle",
+    "_IO_stdin_used",
+    "__libc_csu_init",
+    "_dl_relocate_static_pie",
+    "main",
+    "setvbuf@@GLIBC_2.2.5",
+    "exit@@GLIBC_2.2.5",
+    "__TMC_END__",
+    ".symtab",
+    ".strtab",
+    ".shstrtab",
+    ".interp",
+    ".note.ABI-tag",
+    ".note.gnu.build-id",
+    ".gnu.hash",
+    ".dynsym",
+    ".dynstr",
+    ".gnu.version",
+    ".gnu.version_r",
+    ".rela.dyn",
+    ".rela.plt",
+    ".init",
+    ".text",
+    ".fini",
+    ".rodata",
+    ".eh_frame_hdr",
+    ".eh_frame",
+    ".init_array",
+    ".fini_array",
+    ".dynamic",
+    ".got",
+    ".got.plt",
+    ".data",
+    ".bss",
+    ".comment"
+  ],
+  "entry_points": {
+    "entry_address": "0x400760",
+    "main_candidates": [
+      "_start",
+      "main"
+    ],
+    "input_functions": [
+      "read"
+    ]
+  },
+  "suspected_vulns": [
+    {
+      "function": "printf",
+      "type": "format_string_candidate",
+      "evidence": "printf-like sink imported; verify user-controlled format paths."
+    }
+  ],
+  "pruned_context": [
+    {
+      "function": "printf@plt",
+      "reason": "sink_pattern",
+      "snippet": "00000000004006e0 <printf@plt>:\n  4006e0:\tff 25 3a 09 20 00    \tjmp    QWORD PTR [rip+0x20093a]        # 601020 <printf@GLIBC_2.2.5>\n  4006e6:\t68 01 00 00 00       \tpush   0x1\n  4006eb:\te9 d0 ff ff ff       \tjmp    4006c0 <.plt>\n"
+    },
+    {
+      "function": "read@plt",
+      "reason": "sink_pattern",
+      "snippet": "0000000000400710 <read@plt>:\n  400710:\tff 25 22 09 20 00    \tjmp    QWORD PTR [rip+0x200922]        # 601038 <read@GLIBC_2.2.5>\n  400716:\t68 04 00 00 00       \tpush   0x4\n  40071b:\te9 a0 ff ff ff       \tjmp    4006c0 <.plt>\n"
+    },
+    {
+      "function": "main",
+      "reason": "name_hint",
+      "snippet": "0000000000400847 <main>:\n  400847:\t55                   \tpush   rbp\n  400848:\t48 89 e5             \tmov    rbp,rsp\n  40084b:\t48 8b 05 1e 08 20 00 \tmov    rax,QWORD PTR [rip+0x20081e]        # 601070 <stdout@GLIBC_2.2.5>\n  400852:\tb9 00 00 00 00       \tmov    ecx,0x0\n  400857:\tba 02 00 00 00       \tmov    edx,0x2\n  40085c:\tbe 00 00 00 00       \tmov    esi,0x0\n  400861:\t48 89 c7             \tmov    rdi,rax\n  400864:\te8 c7 fe ff ff       \tcall   400730 <setvbuf@plt>\n  400869:\tbf c8 09 40 00       \tmov    edi,0x4009c8\n  40086e:\te8 5d fe ff ff       \tcall   4006d0 <puts@plt>\n  400873:\tbf df 09 40 00       \tmov    edi,0x4009df\n  400878:\te8 53 fe ff ff       \tcall   4006d0 <puts@plt>\n  40087d:\tb8 00 00 00 00       \tmov    eax,0x0\n  400882:\te8 11 00 00 00       \tcall   400898 <pwnme>\n  400887:\tbf e7 09 40 00       \tmov    edi,0x4009e7\n  40088c:\te8 3f fe ff ff       \tcall   4006d0 <puts@plt>\n  400891:\tb8 00 00 00 00       \tmov    eax,0x0\n  400896:\t5d                   \tpop    rbp\n  400897:\tc3                   \tret\n"
+    },
+    {
+      "function": "pwnme",
+      "reason": "sink_pattern",
+      "snippet": "0000000000400898 <pwnme>:\n  400898:\t55                   \tpush   rbp\n  400899:\t48 89 e5             \tmov    rbp,rsp\n  40089c:\t48 83 ec 20          \tsub    rsp,0x20\n  4008a0:\t48 8d 45 e0          \tlea    rax,[rbp-0x20]\n  4008a4:\tba 20 00 00 00       \tmov    edx,0x20\n  4008a9:\tbe 00 00 00 00       \tmov    esi,0x0\n  4008ae:\t48 89 c7             \tmov    rdi,rax\n  4008b1:\te8 4a fe ff ff       \tcall   400700 <memset@plt>\n  4008b6:\tbf f0 09 40 00       \tmov    edi,0x4009f0\n  4008bb:\te8 10 fe ff ff       \tcall   4006d0 <puts@plt>\n  4008c0:\tbf 13 0a 40 00       \tmov    edi,0x400a13\n  4008c5:\tb8 00 00 00 00       \tmov    eax,0x0\n  4008ca:\te8 11 fe ff ff       \tcall   4006e0 <printf@plt>\n  4008cf:\t48 8d 45 e0          \tlea    rax,[rbp-0x20]\n  4008d3:\tba 00 02 00 00       \tmov    edx,0x200\n  4008d8:\t48 89 c6             \tmov    rsi,rax\n  4008db:\tbf 00 00 00 00       \tmov    edi,0x0\n  4008e0:\te8 2b fe ff ff       \tcall   400710 <read@plt>\n  4008e5:\tbf 16 0a 40 00       \tmov    edi,0x400a16\n  4008ea:\te8 e1 fd ff ff       \tcall   4006d0 <puts@plt>\n  4008ef:\t90                   \tnop\n  4008f0:\tc9                   \tleave\n  4008f1:\tc3                   \tret\n"
+    },
+    {
+      "function": "usefulGadgets",
+      "reason": "sink_pattern",
+      "snippet": "000000000040093c <usefulGadgets>:\n  40093c:\t5f                   \tpop    rdi\n  40093d:\t5e                   \tpop    rsi\n  40093e:\t5a                   \tpop    rdx\n  40093f:\tc3                   \tret\n"
+    }
+  ],
+  "helper_insights": {
+    "challenge_class": "callme",
+    "challenge_family": "multi_call_rop",
+    "recommended_methods": [
+      "build a ROP chain that calls callme_one, callme_two, callme_three in order",
+      "use the expected 64-bit constants exactly",
+      "ensure any required shared library path is available at runtime"
+    ],
+    "prompt_warnings": [
+      "This is a ROP-style challenge; a mere input string is not enough."
+    ],
+    "recommended_local_tools": [
+      "readelf_symbols(callme_one|callme_two|callme_three|useful)",
+      "gadget_search(pop rdi|pop rsi|pop rdx)",
+      "nearby_files"
+    ],
+    "recommended_preruns": [
+      "capture startup output before guessing interaction"
+    ],
+    "runtime_hints": [
+      "This challenge may depend on sidecar shared libraries or helper files in the runtime directory."
+    ],
+    "completion_requirements": [],
+    "bootstrap_bundle": {
+      "tool_requests": [
+        {
+          "tool": "readelf_sections",
+          "args": {}
+        },
+        {
+          "tool": "readelf_relocs",
+          "args": {}
+        },
+        {
+          "tool": "readelf_symbols",
+          "args": {
+            "pattern": "main|win|ret|foothold|print_file|system|call|pivot|useful|csu"
+          }
+        }
+      ],
+      "command_requests": [
+        {
+          "command": "file_info",
+          "args": {}
+        },
+        {
+          "command": "nearby_files",
+          "args": {}
+        },
+        {
+          "command": "ldd",
+          "args": {}
+        },
+        {
+          "command": "run_head",
+          "args": {
+            "timeout": 2
+          }
+        }
+      ]
+    },
+    "candidate_inputs": [
+      "libcallme.so",
+      "callme_two",
+      "_init",
+      "_fini",
+      "callme_three",
+      "callme_one",
+      "libc.so.6",
+      "exit",
+      "puts",
+      "printf",
+      "memset",
+      "read",
+      "stdout",
+      "setvbuf",
+      "_edata",
+      "_end",
+      "AWAVI",
+      "AUATL",
+      "x86_64",
+      "Exiting"
+    ],
+    "candidate_offsets": [
+      40,
+      32,
+      44,
+      48,
+      56
+    ],
+    "candidate_symbols": [
+      "usefulGadgets"
+    ],
+    "success_markers": []
+  },
+  "notes": []
+}

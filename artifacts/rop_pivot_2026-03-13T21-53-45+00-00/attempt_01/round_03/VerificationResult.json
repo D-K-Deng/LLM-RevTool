@@ -1,0 +1,28 @@
+{
+  "attempt": 1,
+  "status": "timeout",
+  "stdout_tail": "[*] '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_pivot'\n    Arch:       amd64-64-little\n    RELRO:      Partial RELRO\n    Stack:      No canary found\n    NX:         NX enabled\n    PIE:        No PIE (0x400000)\n    RUNPATH:    b'.'\n    Stripped:   No\n[x] Starting local process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_pivot'\n[+] Starting local process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_pivot': pid 869\n[*] Leaked pivot address: 0x74b943bfef10\n[*] Sent first stage payload (pivot)\n",
+  "stderr_tail": "\n[timeout]",
+  "exit_code": null,
+  "signal": null,
+  "timeout": true,
+  "artifacts": {
+    "exploit_path": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/rop_pivot_2026-03-13T21-53-45+00-00/attempt_01/round_03/exploit.py",
+    "attempt_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/rop_pivot_2026-03-13T21-53-45+00-00/attempt_01/round_03",
+    "outer_attempt_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/rop_pivot_2026-03-13T21-53-45+00-00/attempt_01"
+  },
+  "success_reason": "",
+  "failure_reason": "Exploit timed out.",
+  "feedback_payload": {
+    "status": "timeout",
+    "exit_code": null,
+    "signal": null,
+    "timeout": true,
+    "stdout_tail": "[*] '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_pivot'\n    Arch:       amd64-64-little\n    RELRO:      Partial RELRO\n    Stack:      No canary found\n    NX:         NX enabled\n    PIE:        No PIE (0x400000)\n    RUNPATH:    b'.'\n    Stripped:   No\n[x] Starting local process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_pivot'\n[+] Starting local process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_pivot': pid 869\n[*] Leaked pivot address: 0x74b943bfef10\n[*] Sent first stage payload (pivot)\n",
+    "stderr_tail": "\n[timeout]",
+    "failure_reason": "Exploit timed out.",
+    "success_reason": ""
+  },
+  "round": 3,
+  "draft": 7
+}

@@ -1,0 +1,7 @@
+{
+  "attempt": 1,
+  "round": 5,
+  "draft": 13,
+  "status": "generation_rejected",
+  "error": "Pivot-family exploit is incomplete: missing ret2win computation/call. Use the leaked pivot address, resolve ret2win via foothold/libpivot, and send both payload stages."
+}

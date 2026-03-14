@@ -1,0 +1,271 @@
+{
+  "binary_path": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_ret2win",
+  "binary_name": "rop_ret2win",
+  "timestamp": "2026-03-13T21:46:09+00:00",
+  "architecture": "amd64",
+  "protections": {
+    "pie": false,
+    "nx": true,
+    "canary": false,
+    "relro": "partial"
+  },
+  "imports": [
+    "(2)",
+    "UND",
+    "__gmon_start__",
+    "__libc_start_main",
+    "memset",
+    "printf",
+    "puts",
+    "read",
+    "setvbuf",
+    "system"
+  ],
+  "exports": [
+    "stdout@GLIBC_2.2.5"
+  ],
+  "interesting_strings": [
+    "ret2win by ROP Emporium",
+    "For my first trick, I will attempt to fit 56 bytes of user input into 32 bytes of stack buffer!",
+    "You there, may I have your input please? And don't worry about null bytes, we're using read()!",
+    "Well done! Here's your flag:",
+    "/bin/cat flag.txt",
+    "ret2win.c",
+    "ret2win",
+    "/lib64/ld-linux-x86-64.so.2",
+    "libc.so.6",
+    "puts",
+    "printf",
+    "memset",
+    "read",
+    "stdout",
+    "system",
+    "setvbuf",
+    "__libc_start_main",
+    "GLIBC_2.2.5",
+    "__gmon_start__",
+    "AWAVI",
+    "AUATL",
+    "[]A\\A]A^A_",
+    "x86_64",
+    "Exiting",
+    "What could possibly go wrong?",
+    "Thank you!",
+    ";*3$\"",
+    "GCC: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0",
+    "crtstuff.c",
+    "deregister_tm_clones",
+    "__do_global_dtors_aux",
+    "completed.7698",
+    "__do_global_dtors_aux_fini_array_entry",
+    "frame_dummy",
+    "__frame_dummy_init_array_entry",
+    "pwnme",
+    "__FRAME_END__",
+    "__init_array_end",
+    "_DYNAMIC",
+    "__init_array_start",
+    "__GNU_EH_FRAME_HDR",
+    "_GLOBAL_OFFSET_TABLE_",
+    "__libc_csu_fini",
+    "stdout@@GLIBC_2.2.5",
+    "puts@@GLIBC_2.2.5",
+    "_edata",
+    "system@@GLIBC_2.2.5",
+    "printf@@GLIBC_2.2.5",
+    "memset@@GLIBC_2.2.5",
+    "read@@GLIBC_2.2.5",
+    "__libc_start_main@@GLIBC_2.2.5",
+    "__data_start",
+    "__dso_handle",
+    "_IO_stdin_used",
+    "__libc_csu_init",
+    "_dl_relocate_static_pie",
+    "__bss_start",
+    "main",
+    "setvbuf@@GLIBC_2.2.5",
+    "__TMC_END__",
+    ".symtab",
+    ".strtab",
+    ".shstrtab",
+    ".interp",
+    ".note.ABI-tag",
+    ".note.gnu.build-id",
+    ".gnu.hash",
+    ".dynsym",
+    ".dynstr",
+    ".gnu.version",
+    ".gnu.version_r",
+    ".rela.dyn",
+    ".rela.plt",
+    ".init",
+    ".text",
+    ".fini",
+    ".rodata",
+    ".eh_frame_hdr",
+    ".eh_frame",
+    ".init_array",
+    ".fini_array",
+    ".dynamic",
+    ".got",
+    ".got.plt",
+    ".data",
+    ".bss",
+    ".comment"
+  ],
+  "entry_points": {
+    "entry_address": "0x4005b0",
+    "main_candidates": [
+      "_start",
+      "main"
+    ],
+    "input_functions": [
+      "read"
+    ]
+  },
+  "suspected_vulns": [
+    {
+      "function": "printf",
+      "type": "format_string_candidate",
+      "evidence": "printf-like sink imported; verify user-controlled format paths."
+    },
+    {
+      "function": "ret2win",
+      "type": "interesting_function",
+      "evidence": "function name suggests privileged path"
+    }
+  ],
+  "pruned_context": [
+    {
+      "function": "system@plt",
+      "reason": "sink_pattern",
+      "snippet": "0000000000400560 <system@plt>:\n  400560:\tff 25 ba 0a 20 00    \tjmp    QWORD PTR [rip+0x200aba]        # 601020 <system@GLIBC_2.2.5>\n  400566:\t68 01 00 00 00       \tpush   0x1\n  40056b:\te9 d0 ff ff ff       \tjmp    400540 <.plt>\n"
+    },
+    {
+      "function": "printf@plt",
+      "reason": "sink_pattern",
+      "snippet": "0000000000400570 <printf@plt>:\n  400570:\tff 25 b2 0a 20 00    \tjmp    QWORD PTR [rip+0x200ab2]        # 601028 <printf@GLIBC_2.2.5>\n  400576:\t68 02 00 00 00       \tpush   0x2\n  40057b:\te9 c0 ff ff ff       \tjmp    400540 <.plt>\n"
+    },
+    {
+      "function": "read@plt",
+      "reason": "sink_pattern",
+      "snippet": "0000000000400590 <read@plt>:\n  400590:\tff 25 a2 0a 20 00    \tjmp    QWORD PTR [rip+0x200aa2]        # 601038 <read@GLIBC_2.2.5>\n  400596:\t68 04 00 00 00       \tpush   0x4\n  40059b:\te9 a0 ff ff ff       \tjmp    400540 <.plt>\n"
+    },
+    {
+      "function": "main",
+      "reason": "name_hint",
+      "snippet": "0000000000400697 <main>:\n  400697:\t55                   \tpush   rbp\n  400698:\t48 89 e5             \tmov    rbp,rsp\n  40069b:\t48 8b 05 b6 09 20 00 \tmov    rax,QWORD PTR [rip+0x2009b6]        # 601058 <stdout@GLIBC_2.2.5>\n  4006a2:\tb9 00 00 00 00       \tmov    ecx,0x0\n  4006a7:\tba 02 00 00 00       \tmov    edx,0x2\n  4006ac:\tbe 00 00 00 00       \tmov    esi,0x0\n  4006b1:\t48 89 c7             \tmov    rdi,rax\n  4006b4:\te8 e7 fe ff ff       \tcall   4005a0 <setvbuf@plt>\n  4006b9:\tbf 08 08 40 00       \tmov    edi,0x400808\n  4006be:\te8 8d fe ff ff       \tcall   400550 <puts@plt>\n  4006c3:\tbf 20 08 40 00       \tmov    edi,0x400820\n  4006c8:\te8 83 fe ff ff       \tcall   400550 <puts@plt>\n  4006cd:\tb8 00 00 00 00       \tmov    eax,0x0\n  4006d2:\te8 11 00 00 00       \tcall   4006e8 <pwnme>\n  4006d7:\tbf 28 08 40 00       \tmov    edi,0x400828\n  4006dc:\te8 6f fe ff ff       \tcall   400550 <puts@plt>\n  4006e1:\tb8 00 00 00 00       \tmov    eax,0x0\n  4006e6:\t5d                   \tpop    rbp\n  4006e7:\tc3                   \tret\n"
+    },
+    {
+      "function": "pwnme",
+      "reason": "sink_pattern",
+      "snippet": "00000000004006e8 <pwnme>:\n  4006e8:\t55                   \tpush   rbp\n  4006e9:\t48 89 e5             \tmov    rbp,rsp\n  4006ec:\t48 83 ec 20          \tsub    rsp,0x20\n  4006f0:\t48 8d 45 e0          \tlea    rax,[rbp-0x20]\n  4006f4:\tba 20 00 00 00       \tmov    edx,0x20\n  4006f9:\tbe 00 00 00 00       \tmov    esi,0x0\n  4006fe:\t48 89 c7             \tmov    rdi,rax\n  400701:\te8 7a fe ff ff       \tcall   400580 <memset@plt>\n  400706:\tbf 38 08 40 00       \tmov    edi,0x400838\n  40070b:\te8 40 fe ff ff       \tcall   400550 <puts@plt>\n  400710:\tbf 98 08 40 00       \tmov    edi,0x400898\n  400715:\te8 36 fe ff ff       \tcall   400550 <puts@plt>\n  40071a:\tbf b8 08 40 00       \tmov    edi,0x4008b8\n  40071f:\te8 2c fe ff ff       \tcall   400550 <puts@plt>\n  400724:\tbf 18 09 40 00       \tmov    edi,0x400918\n  400729:\tb8 00 00 00 00       \tmov    eax,0x0\n  40072e:\te8 3d fe ff ff       \tcall   400570 <printf@plt>\n  400733:\t48 8d 45 e0          \tlea    rax,[rbp-0x20]\n  400737:\tba 38 00 00 00       \tmov    edx,0x38\n  40073c:\t48 89 c6             \tmov    rsi,rax\n  40073f:\tbf 00 00 00 00       \tmov    edi,0x0\n  400744:\te8 47 fe ff ff       \tcall   400590 <read@plt>\n  400749:\tbf 1b 09 40 00       \tmov    edi,0x40091b\n  40074e:\te8 fd fd ff ff       \tcall   400550 <puts@plt>\n  400753:\t90                   \tnop\n  400754:\tc9                   \tleave\n  400755:\tc3                   \tret\n"
+    },
+    {
+      "function": "ret2win",
+      "reason": "from_suspected_vulns",
+      "snippet": "0000000000400756 <ret2win>:\n  400756:\t55                   \tpush   rbp\n  400757:\t48 89 e5             \tmov    rbp,rsp\n  40075a:\tbf 26 09 40 00       \tmov    edi,0x400926\n  40075f:\te8 ec fd ff ff       \tcall   400550 <puts@plt>\n  400764:\tbf 43 09 40 00       \tmov    edi,0x400943\n  400769:\te8 f2 fd ff ff       \tcall   400560 <system@plt>\n  40076e:\t90                   \tnop\n  40076f:\t5d                   \tpop    rbp\n  400770:\tc3                   \tret\n  400771:\t66 2e 0f 1f 84 00 00 \tcs nop WORD PTR [rax+rax*1+0x0]\n  400778:\t00 00 00 \n  40077b:\t0f 1f 44 00 00       \tnop    DWORD PTR [rax+rax*1+0x0]\n"
+    }
+  ],
+  "helper_insights": {
+    "challenge_class": "ret2win",
+    "challenge_family": "simple_control_hijack",
+    "recommended_methods": [
+      "find win/ret2win symbol",
+      "determine offset to saved RIP",
+      "try payloads with and without a stack-alignment ret gadget"
+    ],
+    "prompt_warnings": [
+      "This is a ROP-style challenge; a mere input string is not enough."
+    ],
+    "recommended_local_tools": [
+      "readelf_symbols",
+      "gadget_search(pop rdi / ret / leave / ret as needed)",
+      "run_head"
+    ],
+    "recommended_preruns": [
+      "capture startup output before guessing interaction"
+    ],
+    "runtime_hints": [
+      "This challenge may depend on sidecar shared libraries or helper files in the runtime directory.",
+      "Look for flag.txt or print_file-related file access; the target may expect a runtime cwd with helper files."
+    ],
+    "completion_requirements": [],
+    "bootstrap_bundle": {
+      "tool_requests": [
+        {
+          "tool": "readelf_sections",
+          "args": {}
+        },
+        {
+          "tool": "readelf_relocs",
+          "args": {}
+        },
+        {
+          "tool": "readelf_symbols",
+          "args": {
+            "pattern": "main|win|ret|foothold|print_file|system|call|pivot|useful|csu"
+          }
+        }
+      ],
+      "command_requests": [
+        {
+          "command": "file_info",
+          "args": {}
+        },
+        {
+          "command": "nearby_files",
+          "args": {}
+        },
+        {
+          "command": "ldd",
+          "args": {}
+        },
+        {
+          "command": "run_head",
+          "args": {
+            "timeout": 2
+          }
+        }
+      ]
+    },
+    "candidate_inputs": [
+      "ret2win.c",
+      "ret2win",
+      "libc.so.6",
+      "puts",
+      "printf",
+      "memset",
+      "read",
+      "stdout",
+      "system",
+      "setvbuf",
+      "AWAVI",
+      "AUATL",
+      "x86_64",
+      "Exiting",
+      "crtstuff.c",
+      "deregister_tm_clones",
+      "completed.7698",
+      "frame_dummy",
+      "pwnme",
+      "_DYNAMIC"
+    ],
+    "candidate_offsets": [
+      40,
+      32,
+      44,
+      48,
+      56
+    ],
+    "candidate_symbols": [
+      "ret2win",
+      "system@plt"
+    ],
+    "success_markers": [
+      "Well done! Here's your flag:",
+      "/bin/cat flag.txt"
+    ]
+  },
+  "notes": []
+}
