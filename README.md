@@ -86,14 +86,14 @@ Edit `.env`:
 - `LLM_PROVIDER=gemini` or `LLM_PROVIDER=openai_compatible`
 - `REFLECTION_LLM_PROVIDER=gemini` or `REFLECTION_LLM_PROVIDER=openai_compatible`
 - `GEMINI_API_KEY=...`
-- `GEMINI_MODEL=gemini-2.5-pro`
+- `GEMINI_MODEL=gemini-3.1-pro-preview`
 - `REFLECTION_GEMINI_MODEL=gemini-2.5-flash`
 
-Recommended model values:
+Recommended primary models:
 
-- `gemini-2.5-pro`
-- `gemini-2.5-flash`
-- `gemini-3-flash-preview`
+- `gemini-3.1-pro-preview`
+- `anthropic.claude-opus-4-6`
+- `gpt-5.4-2026-03-05`
 
 Recommended setup:
 
@@ -102,8 +102,14 @@ Recommended setup:
 
 Default split used by `.env.example`:
 
-- primary Gemini: `gemini-2.5-pro`
+- primary Gemini: `gemini-3.1-pro-preview`
 - reflection Gemini: `gemini-2.5-flash`
+
+Recommended provider/model combinations:
+
+- Gemini primary: `GEMINI_MODEL=gemini-3.1-pro-preview`
+- OpenAI-compatible primary with Claude: `OPENAI_COMPAT_MODEL=anthropic.claude-opus-4-6`
+- OpenAI-compatible primary with GPT: `OPENAI_COMPAT_MODEL=gpt-5.4-2026-03-05`
 
 Example Dartmouth OpenAI-compatible config:
 
