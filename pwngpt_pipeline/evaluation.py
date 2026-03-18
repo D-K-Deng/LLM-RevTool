@@ -45,7 +45,9 @@ def run_evaluation(
             "name": name,
             "binary": str(binary),
             "solved": summary["solved"],
-            "success_attempt": summary["success_attempt"] or -1,
+            "success_attempt": summary["success_attempt"]
+            if summary["success_attempt"] is not None
+            else -1,
             "attempts_used": summary["attempts_used"],
             "elapsed_seconds": summary["elapsed_seconds"],
             "run_dir": summary["run_dir"],
@@ -60,7 +62,9 @@ def run_evaluation(
         )
 
     solved_count = sum(1 for r in rows if r["solved"])
-    attempts_for_success = [r["success_attempt"] for r in rows if r["solved"] and r["success_attempt"] > 0]
+    attempts_for_success = [
+        r["success_attempt"] for r in rows if r["solved"] and r["success_attempt"] >= 0
+    ]
     summary_payload = {
         "manifest_path": str(manifest_path),
         "eval_dir": str(eval_dir.resolve()),

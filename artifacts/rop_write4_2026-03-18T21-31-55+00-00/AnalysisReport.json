@@ -1,0 +1,236 @@
+{
+  "binary_path": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_write4",
+  "binary_name": "rop_write4",
+  "timestamp": "2026-03-18T21:31:55+00:00",
+  "architecture": "amd64",
+  "protections": {
+    "pie": false,
+    "nx": true,
+    "canary": false,
+    "relro": "partial"
+  },
+  "imports": [
+    "(2)",
+    "UND",
+    "__gmon_start__",
+    "__libc_start_main",
+    "print_file",
+    "pwnme"
+  ],
+  "exports": [
+    "__bss_start",
+    "_edata",
+    "_end",
+    "_fini",
+    "_init"
+  ],
+  "interesting_strings": [
+    "/lib64/ld-linux-x86-64.so.2",
+    "libwrite4.so",
+    "__gmon_start__",
+    "print_file",
+    "pwnme",
+    "_init",
+    "_fini",
+    "libc.so.6",
+    "__libc_start_main",
+    "_edata",
+    "__bss_start",
+    "_end",
+    "GLIBC_2.2.5",
+    "AWAVI",
+    "AUATL",
+    "[]A\\A]A^A_",
+    "nonexistent",
+    ";*3$\"",
+    "GCC: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0",
+    "crtstuff.c",
+    "deregister_tm_clones",
+    "__do_global_dtors_aux",
+    "completed.7698",
+    "__do_global_dtors_aux_fini_array_entry",
+    "frame_dummy",
+    "__frame_dummy_init_array_entry",
+    "write4.c",
+    "usefulFunction",
+    "/tmp/cc0wK0o0.o",
+    "usefulGadgets",
+    "__FRAME_END__",
+    "__init_array_end",
+    "_DYNAMIC",
+    "__init_array_start",
+    "__GNU_EH_FRAME_HDR",
+    "_GLOBAL_OFFSET_TABLE_",
+    "__libc_csu_fini",
+    "__libc_start_main@@GLIBC_2.2.5",
+    "__data_start",
+    "__dso_handle",
+    "_IO_stdin_used",
+    "__libc_csu_init",
+    "_dl_relocate_static_pie",
+    "main",
+    "__TMC_END__",
+    ".symtab",
+    ".strtab",
+    ".shstrtab",
+    ".interp",
+    ".note.ABI-tag",
+    ".note.gnu.build-id",
+    ".gnu.hash",
+    ".dynsym",
+    ".dynstr",
+    ".gnu.version",
+    ".gnu.version_r",
+    ".rela.dyn",
+    ".rela.plt",
+    ".init",
+    ".text",
+    ".fini",
+    ".rodata",
+    ".eh_frame_hdr",
+    ".eh_frame",
+    ".init_array",
+    ".fini_array",
+    ".dynamic",
+    ".got",
+    ".got.plt",
+    ".data",
+    ".bss",
+    ".comment"
+  ],
+  "entry_points": {
+    "entry_address": "0x400520",
+    "main_candidates": [
+      "_start",
+      "main"
+    ],
+    "input_functions": []
+  },
+  "suspected_vulns": [],
+  "pruned_context": [
+    {
+      "function": "main",
+      "reason": "name_hint",
+      "snippet": "0000000000400607 <main>:\n  400607:\t55                   \tpush   rbp\n  400608:\t48 89 e5             \tmov    rbp,rsp\n  40060b:\te8 f0 fe ff ff       \tcall   400500 <pwnme@plt>\n  400610:\tb8 00 00 00 00       \tmov    eax,0x0\n  400615:\t5d                   \tpop    rbp\n  400616:\tc3                   \tret\n"
+    },
+    {
+      "function": "usefulGadgets",
+      "reason": "sink_pattern",
+      "snippet": "0000000000400628 <usefulGadgets>:\n  400628:\t4d 89 3e             \tmov    QWORD PTR [r14],r15\n  40062b:\tc3                   \tret\n  40062c:\t0f 1f 40 00          \tnop    DWORD PTR [rax+0x0]\n"
+    }
+  ],
+  "helper_insights": {
+    "challenge_class": "write4",
+    "challenge_family": "write_what_where_rop",
+    "recommended_methods": [
+      "write flag.txt into writable memory using write-what-where gadgets",
+      "then call print_file(pointer)",
+      "fall back to objdump-derived gadget addresses if gadget auto-detection fails"
+    ],
+    "prompt_warnings": [
+      "This is a ROP-style challenge; a mere input string is not enough."
+    ],
+    "recommended_local_tools": [
+      "readelf_sections",
+      "gadget_search(mov qword ptr [...], ...)",
+      "readelf_symbols(print_file|useful)"
+    ],
+    "recommended_preruns": [
+      "capture startup output before guessing interaction"
+    ],
+    "runtime_hints": [
+      "This challenge may depend on sidecar shared libraries or helper files in the runtime directory."
+    ],
+    "completion_requirements": [],
+    "bootstrap_bundle": {
+      "tool_requests": [
+        {
+          "tool": "readelf_sections",
+          "args": {}
+        },
+        {
+          "tool": "readelf_relocs",
+          "args": {}
+        },
+        {
+          "tool": "readelf_symbols",
+          "args": {
+            "pattern": "main|win|ret|foothold|print_file|system|call|pivot|useful|csu"
+          }
+        },
+        {
+          "tool": "gadget_search",
+          "args": {
+            "needle": "mov qword ptr"
+          }
+        },
+        {
+          "tool": "gadget_search",
+          "args": {
+            "needle": "xor byte ptr"
+          }
+        },
+        {
+          "tool": "readelf_symbols",
+          "args": {
+            "pattern": "print_file|useful"
+          }
+        }
+      ],
+      "command_requests": [
+        {
+          "command": "file_info",
+          "args": {}
+        },
+        {
+          "command": "nearby_files",
+          "args": {}
+        },
+        {
+          "command": "ldd",
+          "args": {}
+        },
+        {
+          "command": "run_head",
+          "args": {
+            "timeout": 2
+          }
+        }
+      ]
+    },
+    "candidate_inputs": [
+      "libwrite4.so",
+      "print_file",
+      "pwnme",
+      "_init",
+      "_fini",
+      "libc.so.6",
+      "_edata",
+      "_end",
+      "AWAVI",
+      "AUATL",
+      "nonexistent",
+      "crtstuff.c",
+      "deregister_tm_clones",
+      "completed.7698",
+      "frame_dummy",
+      "write4.c",
+      "usefulFunction",
+      "/tmp/cc0wK0o0.o",
+      "usefulGadgets",
+      "_DYNAMIC"
+    ],
+    "candidate_offsets": [
+      40,
+      32,
+      44,
+      48,
+      56
+    ],
+    "candidate_symbols": [
+      "usefulGadgets"
+    ],
+    "success_markers": []
+  },
+  "notes": []
+}

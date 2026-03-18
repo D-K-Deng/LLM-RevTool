@@ -1,26 +1,6 @@
 {
   "challenges": [
     {
-      "name": "branch_puzzle",
-      "binary": "challenges/bin/branch_puzzle",
-      "success_regex": ["WIN"]
-    },
-    {
-      "name": "stack_overflow",
-      "binary": "challenges/bin/stack_overflow",
-      "success_regex": ["FLAG\\{stack_overflow_win\\}"]
-    },
-    {
-      "name": "format_string",
-      "binary": "challenges/bin/format_string",
-      "success_regex": ["FLAG\\{format_string_write\\}"]
-    },
-    {
-      "name": "integer_edge",
-      "binary": "challenges/bin/integer_edge",
-      "success_regex": ["FLAG\\{integer_wraparound_path\\}"]
-    },
-    {
       "name": "rop_ret2win",
       "binary": "challenges/bin/rop_ret2win",
       "success_regex": ["ROPE\\{[^}]+\\}"]
@@ -44,6 +24,26 @@
       "name": "rop_badchars",
       "binary": "challenges/bin/rop_badchars",
       "success_regex": ["ROPE\\{[^}]+\\}"]
+    },
+    {
+      "name": "branch_puzzle",
+      "binary": "challenges/bin/branch_puzzle",
+      "success_regex": ["WIN"]
+    },
+    {
+      "name": "stack_overflow",
+      "binary": "challenges/bin/stack_overflow",
+      "success_regex": ["FLAG\\{stack_overflow_win\\}"]
+    },
+    {
+      "name": "format_string",
+      "binary": "challenges/bin/format_string",
+      "success_regex": ["FLAG\\{format_string_write\\}"]
+    },
+    {
+      "name": "integer_edge",
+      "binary": "challenges/bin/integer_edge",
+      "success_regex": ["FLAG\\{integer_wraparound_path\\}"]
     }
   ]
 }

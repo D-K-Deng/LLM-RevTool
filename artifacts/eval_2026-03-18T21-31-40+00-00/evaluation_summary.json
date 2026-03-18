@@ -1,0 +1,101 @@
+{
+  "manifest_path": "challenges/manifest.json",
+  "eval_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/eval_2026-03-18T21-31-40+00-00",
+  "total": 9,
+  "solved": 9,
+  "success_rate": 1.0,
+  "attempts_to_success_mean": 1.444,
+  "attempts_to_success_median": 1,
+  "rows": [
+    {
+      "name": "rop_ret2win",
+      "binary": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_ret2win",
+      "solved": true,
+      "success_attempt": 1,
+      "attempts_used": 1,
+      "elapsed_seconds": 5.333,
+      "run_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/rop_ret2win_2026-03-18T21-31-40+00-00",
+      "last_error": ""
+    },
+    {
+      "name": "rop_split",
+      "binary": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_split",
+      "solved": true,
+      "success_attempt": 1,
+      "attempts_used": 1,
+      "elapsed_seconds": 5.212,
+      "run_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/rop_split_2026-03-18T21-31-45+00-00",
+      "last_error": ""
+    },
+    {
+      "name": "rop_callme",
+      "binary": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_callme",
+      "solved": true,
+      "success_attempt": 1,
+      "attempts_used": 1,
+      "elapsed_seconds": 4.785,
+      "run_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/rop_callme_2026-03-18T21-31-50+00-00",
+      "last_error": ""
+    },
+    {
+      "name": "rop_write4",
+      "binary": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_write4",
+      "solved": true,
+      "success_attempt": 1,
+      "attempts_used": 1,
+      "elapsed_seconds": 5.222,
+      "run_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/rop_write4_2026-03-18T21-31-55+00-00",
+      "last_error": ""
+    },
+    {
+      "name": "rop_badchars",
+      "binary": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_badchars",
+      "solved": true,
+      "success_attempt": 1,
+      "attempts_used": 1,
+      "elapsed_seconds": 5.705,
+      "run_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/rop_badchars_2026-03-18T21-32-00+00-00",
+      "last_error": ""
+    },
+    {
+      "name": "branch_puzzle",
+      "binary": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/branch_puzzle",
+      "solved": true,
+      "success_attempt": 2,
+      "attempts_used": 2,
+      "elapsed_seconds": 23.464,
+      "run_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/branch_puzzle_2026-03-18T21-32-06+00-00",
+      "last_error": "Exploit exited with code 0 without success markers."
+    },
+    {
+      "name": "stack_overflow",
+      "binary": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/stack_overflow",
+      "solved": true,
+      "success_attempt": 2,
+      "attempts_used": 2,
+      "elapsed_seconds": 59.731,
+      "run_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/stack_overflow_2026-03-18T21-32-29+00-00",
+      "last_error": "Exploit exited with code 0 without success markers."
+    },
+    {
+      "name": "format_string",
+      "binary": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/format_string",
+      "solved": true,
+      "success_attempt": 2,
+      "attempts_used": 2,
+      "elapsed_seconds": 498.247,
+      "run_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/format_string_2026-03-18T21-33-27+00-00",
+      "last_error": "Exploit exited with code 0 without success markers."
+    },
+    {
+      "name": "integer_edge",
+      "binary": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/integer_edge",
+      "solved": true,
+      "success_attempt": 2,
+      "attempts_used": 2,
+      "elapsed_seconds": 37.771,
+      "run_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/integer_edge_2026-03-18T21-41-35+00-00",
+      "last_error": "Exploit exited with code 0 without success markers."
+    }
+  ]
+}

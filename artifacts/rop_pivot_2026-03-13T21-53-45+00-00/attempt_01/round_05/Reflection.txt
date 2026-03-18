@@ -1,2 +1,0 @@
-SECTION A: Failure Diagnosis
-The previous attempt failed due to a critical error in payload ordering and an incomplete exploit chain, resulting in an `EOFError` and a `SIGSEGV` (exit code -11) immediately after sending the first input. The feedback explicitly stated: "Pivot-family exploit is incomplete: missing ret2win computation/call. Use the leaked pivot address,

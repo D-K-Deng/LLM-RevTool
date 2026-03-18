@@ -1,0 +1,7 @@
+{
+  "strategy": "heuristic_branch_input",
+  "code": "import argparse\nimport subprocess\n\n\ndef main():\n    parser = argparse.ArgumentParser()\n    parser.add_argument(\"binary\", nargs=\"?\", default=None)\n    parser.add_argument(\"--binary\", dest=\"binary_flag\", default=None)\n    args = parser.parse_args()\n    binary = args.binary_flag or args.binary\n    if not binary:\n        raise SystemExit(\"missing binary path\")\n\n    proc = subprocess.Popen(\n        [binary],\n        stdin=subprocess.PIPE,\n        stdout=subprocess.PIPE,\n        stderr=subprocess.PIPE,\n        text=False,\n    )\n    stdout, stderr = proc.communicate(input=b'PTE1\\n', timeout=5)\n    if stdout:\n        print(stdout.decode(errors=\"replace\"))\n    if stderr:\n        print(stderr.decode(errors=\"replace\"))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "success_conditions": "Send extracted candidate input and observe WIN/FLAG markers.",
+  "raw_text": "heuristic_pre_llm_attempt",
+  "used_format_repair": false
+}

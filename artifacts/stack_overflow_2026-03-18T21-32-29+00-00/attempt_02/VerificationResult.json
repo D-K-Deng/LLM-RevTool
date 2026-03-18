@@ -1,0 +1,28 @@
+{
+  "attempt": 2,
+  "status": "success",
+  "stdout_tail": "[*] '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/stack_overflow'\n    Arch:       amd64-64-little\n    RELRO:      Partial RELRO\n    Stack:      No canary found\n    NX:         NX unknown - GNU_STACK missing\n    PIE:        No PIE (0x400000)\n    Stack:      Executable\n    RWX:        Has RWX segments\n    SHSTK:      Enabled\n    IBT:        Enabled\n    Stripped:   No\n    Debuginfo:  Yes\nOverflow me:\nDone\nFLAG{stack_overflow_win}\n\n",
+  "stderr_tail": "",
+  "exit_code": 0,
+  "signal": null,
+  "timeout": false,
+  "artifacts": {
+    "exploit_path": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/stack_overflow_2026-03-18T21-32-29+00-00/attempt_02/round_01/exploit.py",
+    "attempt_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/stack_overflow_2026-03-18T21-32-29+00-00/attempt_02/round_01",
+    "outer_attempt_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/stack_overflow_2026-03-18T21-32-29+00-00/attempt_02"
+  },
+  "success_reason": "Matched success regex in process output.",
+  "failure_reason": "",
+  "feedback_payload": {
+    "status": "success",
+    "exit_code": 0,
+    "signal": null,
+    "timeout": false,
+    "stdout_tail": "[*] '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/stack_overflow'\n    Arch:       amd64-64-little\n    RELRO:      Partial RELRO\n    Stack:      No canary found\n    NX:         NX unknown - GNU_STACK missing\n    PIE:        No PIE (0x400000)\n    Stack:      Executable\n    RWX:        Has RWX segments\n    SHSTK:      Enabled\n    IBT:        Enabled\n    Stripped:   No\n    Debuginfo:  Yes\nOverflow me:\nDone\nFLAG{stack_overflow_win}\n\n",
+    "stderr_tail": "",
+    "failure_reason": "",
+    "success_reason": "Matched success regex in process output."
+  },
+  "round": 1,
+  "draft": 1
+}

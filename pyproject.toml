@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "llmrev"
+version = "0.1.0"
+description = "Local launcher for the LLM reverse-engineering pipeline"
+requires-python = ">=3.10"
+
+[project.scripts]
+llmrev = "pwngpt_pipeline.launcher:main"
+
+[tool.setuptools]
+packages = ["pwngpt_pipeline"]

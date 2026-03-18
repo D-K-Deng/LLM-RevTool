@@ -1,0 +1,25 @@
+{
+  "attempt": 1,
+  "status": "success",
+  "stdout_tail": "[*] Loaded 13 cached gadgets for '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_badchars'\n[x] Starting local process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_badchars'\n[+] Starting local process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_badchars': pid 772\n[x] Receiving all data\n[x] Receiving all data: 0B\n[x] Receiving all data: 11B\n[x] Receiving all data: 44B\n[+] Receiving all data: Done (44B)\n[*] Stopped process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_badchars' (pid 772)\nThank you!\nROPE{a_placeholder_32byte_flag!}\n\n",
+  "stderr_tail": "",
+  "exit_code": 0,
+  "signal": null,
+  "timeout": false,
+  "artifacts": {
+    "exploit_path": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/rop_badchars_2026-03-18T21-32-00+00-00/attempt_01/exploit.py",
+    "attempt_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/rop_badchars_2026-03-18T21-32-00+00-00/attempt_01"
+  },
+  "success_reason": "Matched success regex in process output.",
+  "failure_reason": "",
+  "feedback_payload": {
+    "status": "success",
+    "exit_code": 0,
+    "signal": null,
+    "timeout": false,
+    "stdout_tail": "[*] Loaded 13 cached gadgets for '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_badchars'\n[x] Starting local process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_badchars'\n[+] Starting local process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_badchars': pid 772\n[x] Receiving all data\n[x] Receiving all data: 0B\n[x] Receiving all data: 11B\n[x] Receiving all data: 44B\n[+] Receiving all data: Done (44B)\n[*] Stopped process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_badchars' (pid 772)\nThank you!\nROPE{a_placeholder_32byte_flag!}\n\n",
+    "stderr_tail": "",
+    "failure_reason": "",
+    "success_reason": "Matched success regex in process output."
+  }
+}

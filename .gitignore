@@ -3,7 +3,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 *.log
-artifacts/
 challenges/bin/
 challenges/downloads/*.zip
 .env
+llmrev.egg-info/

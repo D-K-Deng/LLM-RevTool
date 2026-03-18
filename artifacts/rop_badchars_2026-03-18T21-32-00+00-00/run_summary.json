@@ -1,0 +1,25 @@
+{
+  "binary_path": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_badchars",
+  "run_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/rop_badchars_2026-03-18T21-32-00+00-00",
+  "solved": true,
+  "success_attempt": 1,
+  "success_round": 0,
+  "attempts_used": 1,
+  "max_iterations": 1,
+  "max_inner_rounds_per_attempt": 15,
+  "max_generation_attempts_per_round": 8,
+  "elapsed_seconds": 5.705,
+  "strict_output": true,
+  "enable_pruning": true,
+  "last_error": "",
+  "attempt_logs": [
+    {
+      "attempt": 1,
+      "generation_used_format_repair": false,
+      "verification_status": "success",
+      "failure_reason": "",
+      "success_reason": "Matched success regex in process output.",
+      "strategy": "heuristic_badchars"
+    }
+  ]
+}

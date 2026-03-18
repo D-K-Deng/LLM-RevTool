@@ -1,0 +1,35 @@
+{
+  "binary_path": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/stack_overflow",
+  "run_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/stack_overflow_2026-03-18T21-32-29+00-00",
+  "solved": true,
+  "success_attempt": 2,
+  "success_round": 1,
+  "attempts_used": 2,
+  "max_iterations": 1,
+  "max_inner_rounds_per_attempt": 15,
+  "max_generation_attempts_per_round": 8,
+  "elapsed_seconds": 59.731,
+  "strict_output": true,
+  "enable_pruning": true,
+  "last_error": "Exploit exited with code 0 without success markers.",
+  "attempt_logs": [
+    {
+      "attempt": 1,
+      "generation_used_format_repair": false,
+      "verification_status": "failed",
+      "failure_reason": "Exploit exited with code 0 without success markers.",
+      "success_reason": "",
+      "strategy": "heuristic_branch_input"
+    },
+    {
+      "attempt": 2,
+      "llm_attempt": 1,
+      "round": 1,
+      "draft": 1,
+      "generation_used_format_repair": false,
+      "verification_status": "success",
+      "failure_reason": "",
+      "success_reason": "Matched success regex in process output."
+    }
+  ]
+}

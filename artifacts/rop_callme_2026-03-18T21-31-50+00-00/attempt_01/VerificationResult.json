@@ -1,0 +1,25 @@
+{
+  "attempt": 1,
+  "status": "success",
+  "stdout_tail": "[x] Starting local process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_callme'\n[+] Starting local process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_callme': pid 711\n[x] Receiving all data\n[x] Receiving all data: 0B\n[x] Receiving all data: 79B\n[x] Receiving all data: 109B\n[x] Receiving all data: 139B\n[x] Receiving all data: 172B\n[+] Receiving all data: Done (172B)\n[*] Stopped process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_callme' (pid 711)\ncallme by ROP Emporium\nx86_64\n\nHope you read the instructions...\n\n> Thank you!\ncallme_one() called correctly\ncallme_two() called correctly\nROPE{a_placeholder_32byte_flag!}\n\n",
+  "stderr_tail": "",
+  "exit_code": 0,
+  "signal": null,
+  "timeout": false,
+  "artifacts": {
+    "exploit_path": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/rop_callme_2026-03-18T21-31-50+00-00/attempt_01/exploit.py",
+    "attempt_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/rop_callme_2026-03-18T21-31-50+00-00/attempt_01"
+  },
+  "success_reason": "Matched success regex in process output.",
+  "failure_reason": "",
+  "feedback_payload": {
+    "status": "success",
+    "exit_code": 0,
+    "signal": null,
+    "timeout": false,
+    "stdout_tail": "[x] Starting local process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_callme'\n[+] Starting local process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_callme': pid 711\n[x] Receiving all data\n[x] Receiving all data: 0B\n[x] Receiving all data: 79B\n[x] Receiving all data: 109B\n[x] Receiving all data: 139B\n[x] Receiving all data: 172B\n[+] Receiving all data: Done (172B)\n[*] Stopped process '/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_callme' (pid 711)\ncallme by ROP Emporium\nx86_64\n\nHope you read the instructions...\n\n> Thank you!\ncallme_one() called correctly\ncallme_two() called correctly\nROPE{a_placeholder_32byte_flag!}\n\n",
+    "stderr_tail": "",
+    "failure_reason": "",
+    "success_reason": "Matched success regex in process output."
+  }
+}

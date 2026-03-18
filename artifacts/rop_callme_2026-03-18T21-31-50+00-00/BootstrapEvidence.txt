@@ -1,0 +1,147 @@
+AUTO FACTS
+- runtime_dir=/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/downloads/callme
+- A flag.txt file exists in the runtime directory.
+
+RAW EVIDENCE
+TOOL readelf_sections [ok]
+There are 29 section headers, starting at offset 0x1b28:
+
+Section Headers:
+  [Nr] Name              Type             Address           Offset
+       Size              EntSize          Flags  Link  Info  Align
+  [ 0]                   NULL             0000000000000000  00000000
+       0000000000000000  0000000000000000           0     0     0
+  [ 1] .interp           PROGBITS         0000000000400238  00000238
+       000000000000001c  0000000000000000   A       0     0     1
+  [ 2] .note.ABI-tag     NOTE             0000000000400254  00000254
+       0000000000000020  0000000000000000   A       0     0     4
+  [ 3] .note.gnu.bu[...] NOTE             0000000000400274  00000274
+       0000000000000024  0000000000000000   A       0     0     4
+  [ 4] .gnu.hash         GNU_HASH         0000000000400298  00000298
+       000000000000003c  0000000000000000   A       5     0     8
+  [ 5] .dynsym           DYNSYM           00000000004002d8  000002d8
+       00000000000001b0  0000000000000018   A       6     1     8
+  [ 6] .dynstr           STRTAB           0000000000400488  00000488
+       00000000000000ba  0000000000000000   A       0     0     1
+  [ 7] .gnu.version      VERSYM           0000000000400542  00000542
+       0000000000000024  0000000000000002   A       5     0     2
+  [ 8] .gnu.version_r    VERNEED          0000000000400568  00000568
+       0000000000000020  0000000000000000   A       6     1     8
+  [ 9] .rela.dyn         RELA             0000000000400588  00000588
+       0000000000000048  0000000000000018   A       5     0     8
+  [10] .rela.plt         RELA             00000000004005d0  000005d0
+       00000000000000d8  0000000000000018  AI       5    22     8
+  [11] .init             PROGBITS         00000000004006a8  000006a8
+       0000000000000017  0000000000000000  AX       0     0     4
+  [12] .plt              PROGBITS         00000000004006c0  000006c0
+       00000000000000a0  0000000000000010  AX       0     0     16
+  [13] .text             PROGBITS         0000000000400760  00000760
+       0000000000000252  0000000000000000  AX       0     0     16
+  [14] .fini             PROGBITS         00000000004009b4  000009b4
+       0000000000000009  0000000000000000  AX       0     0     4
+  [15] .rodata           PROGBITS         00000000004009c0  000009c0
+       0000000000000061  0000000000000000   A       0     0     8
+  [16] .eh_frame_hdr     PROGBITS         0000000000400a24  00000a24
+       000000000000004c  0000000000000000   A       0     0     4
+  [17] .eh_frame         PROGBITS         0000000000400a70  00000a70
+       0000000000000140  0000000000000000   A       0     0     8
+  [18] .init_array       INIT_ARRAY       0000000000600df0  00000df0
+       0000000000000008  0000000000000008  WA       0     0     8
+  [19] .fini_array       FINI_ARRAY       0000000000600df8  00000df8
+       0000000000000008  0000000000000008  WA       0     0     8
+  [20] .dynamic          DYNAMIC          0000000000600e00  00000e00
+       00000000000001f0  0000000000000010  WA       6     0     8
+  [21] .got              PROGBITS         0000000000600ff0  00000ff0
+       0000000000000010  0000000000000008  WA       0     0     8
+  [22] .got.plt          PROGBITS         0000000000601000  00001000
+       0000000000000060  0000000000000008  WA       0     0     8
+  [23] .data             PROGBITS         0000000000601060  00001060
+       0000000000000010  0000000000000000  WA       0     0     8
+  [24] .bss              NOBITS           0000000000601070  00001070
+       0000000000000010  0000000000000000  WA       0     0     8
+  [25] .comment          PROGBITS         0000000000000000  00001070
+       0000000000000029  0000000000000001  MS       0     0     1
+  [26] .symtab           SYMTAB           0000000000000000  000010a0
+       00000000000006f0  0000000000000018          27    47     8
+  [27] .strtab           STRTAB           0000000000000000  00001790
+       0000000000000295  0000000000000000           0     0     1
+  [28] .s
+...[truncated]
+
+TOOL readelf_relocs [ok]
+Relocation section '.rela.dyn' at offset 0x588 contains 3 entries:
+  Offset          Info           Type           Sym. Value    Sym. Name + Addend
+000000600ff0  000600000006 R_X86_64_GLOB_DAT 0000000000000000 __libc_start_main@GLIBC_2.2.5 + 0
+000000600ff8  000800000006 R_X86_64_GLOB_DAT 0000000000000000 __gmon_start__ + 0
+000000601070  000c00000005 R_X86_64_COPY     0000000000601070 stdout@GLIBC_2.2.5 + 0
+
+Relocation section '.rela.plt' at offset 0x5d0 contains 9 entries:
+  Offset          Info           Type           Sym. Value    Sym. Name + Addend
+000000601018  000100000007 R_X86_64_JUMP_SLO 0000000000000000 puts@GLIBC_2.2.5 + 0
+000000601020  000200000007 R_X86_64_JUMP_SLO 0000000000000000 printf@GLIBC_2.2.5 + 0
+000000601028  000300000007 R_X86_64_JUMP_SLO 0000000000000000 callme_three + 0
+000000601030  000400000007 R_X86_64_JUMP_SLO 0000000000000000 memset@GLIBC_2.2.5 + 0
+000000601038  000500000007 R_X86_64_JUMP_SLO 0000000000000000 read@GLIBC_2.2.5 + 0
+000000601040  000700000007 R_X86_64_JUMP_SLO 0000000000000000 callme_one + 0
+000000601048  000900000007 R_X86_64_JUMP_SLO 0000000000000000 setvbuf@GLIBC_2.2.5 + 0
+000000601050  000a00000007 R_X86_64_JUMP_SLO 0000000000000000 callme_two + 0
+000000601058  000b00000007 R_X86_64_JUMP_SLO 0000000000000000 exit@GLIBC_2.2.5 + 0
+
+TOOL readelf_symbols [ok]
+args: {'pattern': 'main|win|ret|foothold|print_file|system|call|pivot|useful|csu'}
+3: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND callme_three
+     6: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND __libc_start_main@GLIBC_2.2.5 (2)
+     7: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND callme_one
+    10: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND callme_two
+    34: 0000000000000000     0 FILE    LOCAL  DEFAULT  ABS callme.c
+    36: 00000000004008f2    74 FUNC    LOCAL  DEFAULT   13 usefulFunction
+    38: 000000000040093c     0 NOTYPE  LOCAL  DEFAULT   13 usefulGadgets
+    47: 00000000004009b0     2 FUNC    GLOBAL DEFAULT   13 __libc_csu_fini
+    54: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND callme_three
+    57: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND __libc_start_main@@GLIBC_2.2.5
+    58: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND callme_one
+    63: 0000000000400940   101 FUNC    GLOBAL DEFAULT   13 __libc_csu_init
+    68: 0000000000400847    81 FUNC    GLOBAL DEFAULT   13 main
+    70: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND callme_two
+
+COMMAND file_info [ok]
+/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/rop_callme: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 3.2.0, BuildID[sha1]=e8e49880bdcaeb9012c6de5f8002c72d8827ea4c, not stripped
+
+COMMAND nearby_files [ok]
+binary_dir: /mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin
+branch_puzzle
+flag.txt
+format_string
+integer_edge
+rop_badchars
+rop_callme
+rop_fluff
+rop_pivot
+rop_ret2csu
+rop_ret2win
+rop_split
+rop_write4
+stack_overflow
+
+runtime_dir: /mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/downloads/callme
+callme
+encrypted_flag.dat
+key1.dat
+key2.dat
+libcallme.so
+
+COMMAND ldd [ok]
+linux-vdso.so.1 (0x00007ffe487e5000)
+	libcallme.so => not found
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x0000721a5d000000)
+	/lib64/ld-linux-x86-64.so.2 (0x0000721a5d2c1000)
+
+COMMAND run_head [ok]
+args: {'timeout': 2}
+callme by ROP Emporium
+x86_64
+
+Hope you read the instructions...
+
+>
+[timeout]

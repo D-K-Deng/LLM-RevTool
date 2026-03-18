@@ -1,7 +1,0 @@
-{
-  "attempt": 1,
-  "round": 9,
-  "draft": 31,
-  "status": "generation_rejected",
-  "error": "Pivot-family exploit is incomplete: missing both stage-1 and stage-2 payload sends. Use the leaked pivot address, resolve ret2win via foothold/libpivot, and send both payload stages."
-}

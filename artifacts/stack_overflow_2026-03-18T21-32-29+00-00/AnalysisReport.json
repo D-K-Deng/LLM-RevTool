@@ -1,0 +1,281 @@
+{
+  "binary_path": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/stack_overflow",
+  "binary_name": "stack_overflow",
+  "timestamp": "2026-03-18T21:32:29+00:00",
+  "architecture": "amd64",
+  "protections": {
+    "pie": false,
+    "nx": false,
+    "canary": false,
+    "relro": "partial"
+  },
+  "imports": [
+    "(2)",
+    "(3)",
+    "UND",
+    "__gmon_start__",
+    "__libc_start_main",
+    "exit",
+    "fflush",
+    "puts",
+    "read",
+    "setvbuf"
+  ],
+  "exports": [
+    "stdout@GLIBC_2.2.5"
+  ],
+  "interesting_strings": [
+    "FLAG{stack_overflow_win}",
+    "GNU C17 13.3.0 -mtune=generic -march=x86-64 -g -O0 -fno-stack-protector -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection",
+    "_flags2",
+    "_flags",
+    "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges",
+    "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/src/stack_overflow.c",
+    "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/src",
+    "/lib64/ld-linux-x86-64.so.2",
+    "setvbuf",
+    "puts",
+    "exit",
+    "fflush",
+    "read",
+    "stdout",
+    "__libc_start_main",
+    "libc.so.6",
+    "GLIBC_2.2.5",
+    "GLIBC_2.34",
+    "__gmon_start__",
+    "PTE1",
+    "H=8@@",
+    "Overflow me:",
+    "Done",
+    "9*3$\"",
+    "GCC: (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0",
+    "_IO_read_base",
+    "_IO_read_end",
+    "_IO_FILE",
+    "_IO_write_base",
+    "_IO_buf_end",
+    "__off_t",
+    "_chain",
+    "__pad5",
+    "_mode",
+    "__off64_t",
+    "_fileno",
+    "_IO_save_base",
+    "unsigned char",
+    "_IO_marker",
+    "short unsigned int",
+    "_IO_save_end",
+    "_IO_lock_t",
+    "_markers",
+    "short int",
+    "_old_offset",
+    "_lock",
+    "long long unsigned int",
+    "_IO_codecvt",
+    "_cur_column",
+    "_IO_buf_base",
+    "__ssize_t",
+    "_vtable_offset",
+    "_IO_wide_data",
+    "_freeres_buf",
+    "_unused2",
+    "main",
+    "long long int",
+    "_IO_read_ptr",
+    "vuln",
+    "_IO_write_end",
+    "_IO_backup_base",
+    "_IO_write_ptr",
+    "_freeres_list",
+    "_shortbuf",
+    "/usr/lib/gcc/x86_64-linux-gnu/13/include",
+    "/usr/include/x86_64-linux-gnu/bits",
+    "/usr/include/x86_64-linux-gnu/bits/types",
+    "/usr/include",
+    "stddef.h",
+    "types.h",
+    "struct_FILE.h",
+    "stdio.h",
+    "unistd.h",
+    "stdlib.h",
+    "crt1.o",
+    "__abi_tag",
+    "crtstuff.c",
+    "deregister_tm_clones",
+    "__do_global_dtors_aux",
+    "completed.0",
+    "__do_global_dtors_aux_fini_array_entry",
+    "frame_dummy",
+    "__frame_dummy_init_array_entry",
+    "stack_overflow.c",
+    "__FRAME_END__",
+    "_DYNAMIC",
+    "__GNU_EH_FRAME_HDR",
+    "_GLOBAL_OFFSET_TABLE_",
+    "__libc_start_main@GLIBC_2.34",
+    "stdout@GLIBC_2.2.5",
+    "puts@GLIBC_2.2.5",
+    "_edata",
+    "_fini",
+    "read@GLIBC_2.2.5",
+    "__data_start",
+    "__dso_handle",
+    "_IO_stdin_used",
+    "fflush@GLIBC_2.2.5",
+    "_end",
+    "_dl_relocate_static_pie",
+    "__bss_start",
+    "setvbuf@GLIBC_2.2.5",
+    "exit@GLIBC_2.2.5",
+    "__TMC_END__",
+    "_init",
+    ".symtab",
+    ".strtab",
+    ".shstrtab",
+    ".interp",
+    ".note.gnu.property",
+    ".note.gnu.build-id",
+    ".note.ABI-tag",
+    ".gnu.hash",
+    ".dynsym",
+    ".dynstr",
+    ".gnu.version",
+    ".gnu.version_r",
+    ".rela.dyn",
+    ".rela.plt",
+    ".init"
+  ],
+  "entry_points": {
+    "entry_address": "0x4010d0",
+    "main_candidates": [
+      "_start",
+      "main"
+    ],
+    "input_functions": [
+      "read"
+    ]
+  },
+  "suspected_vulns": [
+    {
+      "function": "unknown",
+      "type": "win_marker",
+      "evidence": "binary string suggests success marker: FLAG{stack_overflow_win}"
+    },
+    {
+      "function": "win",
+      "type": "interesting_function",
+      "evidence": "function name suggests privileged path"
+    }
+  ],
+  "pruned_context": [
+    {
+      "function": "read@plt",
+      "reason": "sink_pattern",
+      "snippet": "0000000000401090 <read@plt>:\n  401090:\tf3 0f 1e fa          \tendbr64\n  401094:\tff 25 6e 2f 00 00    \tjmp    QWORD PTR [rip+0x2f6e]        # 404008 <read@GLIBC_2.2.5>\n  40109a:\t66 0f 1f 44 00 00    \tnop    WORD PTR [rax+rax*1+0x0]\n"
+    },
+    {
+      "function": "win",
+      "reason": "from_suspected_vulns",
+      "snippet": "00000000004011b6 <win>:\n  4011b6:\tf3 0f 1e fa          \tendbr64\n  4011ba:\t55                   \tpush   rbp\n  4011bb:\t48 89 e5             \tmov    rbp,rsp\n  4011be:\t48 8d 05 3f 0e 00 00 \tlea    rax,[rip+0xe3f]        # 402004 <_IO_stdin_used+0x4>\n  4011c5:\t48 89 c7             \tmov    rdi,rax\n  4011c8:\te8 b3 fe ff ff       \tcall   401080 <puts@plt>\n  4011cd:\t48 8b 05 64 2e 00 00 \tmov    rax,QWORD PTR [rip+0x2e64]        # 404038 <stdout@GLIBC_2.2.5>\n  4011d4:\t48 89 c7             \tmov    rdi,rax\n  4011d7:\te8 c4 fe ff ff       \tcall   4010a0 <fflush@plt>\n  4011dc:\tbf 00 00 00 00       \tmov    edi,0x0\n  4011e1:\te8 da fe ff ff       \tcall   4010c0 <exit@plt>\n"
+    },
+    {
+      "function": "vuln",
+      "reason": "name_hint",
+      "snippet": "00000000004011e6 <vuln>:\n  4011e6:\tf3 0f 1e fa          \tendbr64\n  4011ea:\t55                   \tpush   rbp\n  4011eb:\t48 89 e5             \tmov    rbp,rsp\n  4011ee:\t48 83 ec 40          \tsub    rsp,0x40\n  4011f2:\t48 8d 05 24 0e 00 00 \tlea    rax,[rip+0xe24]        # 40201d <_IO_stdin_used+0x1d>\n  4011f9:\t48 89 c7             \tmov    rdi,rax\n  4011fc:\te8 7f fe ff ff       \tcall   401080 <puts@plt>\n  401201:\t48 8d 45 c0          \tlea    rax,[rbp-0x40]\n  401205:\tba 00 01 00 00       \tmov    edx,0x100\n  40120a:\t48 89 c6             \tmov    rsi,rax\n  40120d:\tbf 00 00 00 00       \tmov    edi,0x0\n  401212:\te8 79 fe ff ff       \tcall   401090 <read@plt>\n  401217:\t48 8d 05 0c 0e 00 00 \tlea    rax,[rip+0xe0c]        # 40202a <_IO_stdin_used+0x2a>\n  40121e:\t48 89 c7             \tmov    rdi,rax\n  401221:\te8 5a fe ff ff       \tcall   401080 <puts@plt>\n  401226:\t90                   \tnop\n  401227:\tc9                   \tleave\n  401228:\tc3                   \tret\n"
+    },
+    {
+      "function": "main",
+      "reason": "name_hint",
+      "snippet": "0000000000401229 <main>:\n  401229:\tf3 0f 1e fa          \tendbr64\n  40122d:\t55                   \tpush   rbp\n  40122e:\t48 89 e5             \tmov    rbp,rsp\n  401231:\t48 8b 05 00 2e 00 00 \tmov    rax,QWORD PTR [rip+0x2e00]        # 404038 <stdout@GLIBC_2.2.5>\n  401238:\tb9 00 00 00 00       \tmov    ecx,0x0\n  40123d:\tba 02 00 00 00       \tmov    edx,0x2\n  401242:\tbe 00 00 00 00       \tmov    esi,0x0\n  401247:\t48 89 c7             \tmov    rdi,rax\n  40124a:\te8 61 fe ff ff       \tcall   4010b0 <setvbuf@plt>\n  40124f:\te8 92 ff ff ff       \tcall   4011e6 <vuln>\n  401254:\tb8 00 00 00 00       \tmov    eax,0x0\n  401259:\t5d                   \tpop    rbp\n  40125a:\tc3                   \tret\n\nDisassembly of section .fini:\n"
+    }
+  ],
+  "helper_insights": {
+    "challenge_class": "unknown",
+    "challenge_family": "unknown",
+    "recommended_methods": [
+      "derive a concrete exploit from the analysis report and runtime feedback"
+    ],
+    "prompt_warnings": [],
+    "recommended_local_tools": [
+      "readelf_symbols",
+      "readelf_sections",
+      "run_head"
+    ],
+    "recommended_preruns": [
+      "capture startup output before guessing interaction"
+    ],
+    "runtime_hints": [
+      "This challenge may depend on sidecar shared libraries or helper files in the runtime directory."
+    ],
+    "completion_requirements": [],
+    "bootstrap_bundle": {
+      "tool_requests": [
+        {
+          "tool": "readelf_sections",
+          "args": {}
+        },
+        {
+          "tool": "readelf_relocs",
+          "args": {}
+        },
+        {
+          "tool": "readelf_symbols",
+          "args": {
+            "pattern": "main|win|ret|foothold|print_file|system|call|pivot|useful|csu"
+          }
+        }
+      ],
+      "command_requests": [
+        {
+          "command": "file_info",
+          "args": {}
+        },
+        {
+          "command": "nearby_files",
+          "args": {}
+        },
+        {
+          "command": "ldd",
+          "args": {}
+        },
+        {
+          "command": "run_head",
+          "args": {
+            "timeout": 2
+          }
+        }
+      ]
+    },
+    "candidate_inputs": [
+      "FLAG{stack_overflow_win}",
+      "_flags2",
+      "_flags",
+      "setvbuf",
+      "puts",
+      "exit",
+      "fflush",
+      "read",
+      "stdout",
+      "libc.so.6",
+      "PTE1",
+      "Done",
+      "_IO_read_base",
+      "_IO_read_end",
+      "_IO_FILE",
+      "_IO_write_base",
+      "_IO_buf_end",
+      "_chain",
+      "_mode",
+      "_fileno"
+    ],
+    "candidate_offsets": [],
+    "candidate_symbols": [
+      "win"
+    ],
+    "success_markers": [
+      "FLAG{stack_overflow_win}"
+    ]
+  },
+  "notes": []
+}

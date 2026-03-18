@@ -1,3 +1,0 @@
-- runtime_dir=/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/downloads/ret2csu
-- A flag.txt file exists in the runtime directory.
-- Use __libc_csu_init gadgets instead of guessing ad-hoc pop gadgets.

@@ -1,0 +1,256 @@
+{
+  "binary_path": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/integer_edge",
+  "binary_name": "integer_edge",
+  "timestamp": "2026-03-18T21:41:35+00:00",
+  "architecture": "amd64",
+  "protections": {
+    "pie": true,
+    "nx": true,
+    "canary": true,
+    "relro": "full"
+  },
+  "imports": [
+    "(2)",
+    "(3)",
+    "(4)",
+    "(5)",
+    "UND",
+    "_ITM_deregisterTMCloneTable",
+    "_ITM_registerTMCloneTable",
+    "__cxa_finalize",
+    "__gmon_start__",
+    "__isoc99_scanf",
+    "__libc_start_main",
+    "__stack_chk_fail",
+    "puts"
+  ],
+  "exports": [
+    "__do_global_dtors_aux",
+    "_fini",
+    "_init",
+    "_start",
+    "deregister_tm_clones",
+    "frame_dummy",
+    "main",
+    "register_tm_clones"
+  ],
+  "interesting_strings": [
+    "FLAG{integer_wraparound_path}",
+    "No win",
+    "GNU C17 13.3.0 -mtune=generic -march=x86-64 -g -O0 -fasynchronous-unwind-tables -fstack-protector-strong -fstack-clash-protection -fcf-protection",
+    "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/src/integer_edge.c",
+    "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges",
+    "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/src",
+    "/lib64/ld-linux-x86-64.so.2",
+    "puts",
+    "__stack_chk_fail",
+    "__libc_start_main",
+    "__cxa_finalize",
+    "__isoc99_scanf",
+    "libc.so.6",
+    "GLIBC_2.7",
+    "GLIBC_2.4",
+    "GLIBC_2.2.5",
+    "GLIBC_2.34",
+    "_ITM_deregisterTMCloneTable",
+    "__gmon_start__",
+    "_ITM_registerTMCloneTable",
+    "PTE1",
+    "u+UH",
+    "Give me a number (uint32):",
+    "9*3$\"",
+    "GCC: (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0",
+    "long long int",
+    "__uint32_t",
+    "long long unsigned int",
+    "unsigned char",
+    "short unsigned int",
+    "__int32_t",
+    "main",
+    "short int",
+    "/usr/include/x86_64-linux-gnu/bits",
+    "/usr/include",
+    "types.h",
+    "stdint-intn.h",
+    "stdint-uintn.h",
+    "stdio.h",
+    "Scrt1.o",
+    "__abi_tag",
+    "crtstuff.c",
+    "deregister_tm_clones",
+    "__do_global_dtors_aux",
+    "completed.0",
+    "__do_global_dtors_aux_fini_array_entry",
+    "frame_dummy",
+    "__frame_dummy_init_array_entry",
+    "integer_edge.c",
+    "__FRAME_END__",
+    "_DYNAMIC",
+    "__GNU_EH_FRAME_HDR",
+    "_GLOBAL_OFFSET_TABLE_",
+    "__libc_start_main@GLIBC_2.34",
+    "puts@GLIBC_2.2.5",
+    "_edata",
+    "_fini",
+    "__stack_chk_fail@GLIBC_2.4",
+    "__data_start",
+    "__dso_handle",
+    "_IO_stdin_used",
+    "_end",
+    "__bss_start",
+    "__isoc99_scanf@GLIBC_2.7",
+    "__TMC_END__",
+    "__cxa_finalize@GLIBC_2.2.5",
+    "_init",
+    ".symtab",
+    ".strtab",
+    ".shstrtab",
+    ".interp",
+    ".note.gnu.property",
+    ".note.gnu.build-id",
+    ".note.ABI-tag",
+    ".gnu.hash",
+    ".dynsym",
+    ".dynstr",
+    ".gnu.version",
+    ".gnu.version_r",
+    ".rela.dyn",
+    ".rela.plt",
+    ".init",
+    ".plt.got",
+    ".plt.sec",
+    ".text",
+    ".fini",
+    ".rodata",
+    ".eh_frame_hdr",
+    ".eh_frame",
+    ".init_array",
+    ".fini_array",
+    ".dynamic",
+    ".data",
+    ".bss",
+    ".comment",
+    ".debug_aranges",
+    ".debug_info",
+    ".debug_abbrev",
+    ".debug_line",
+    ".debug_str",
+    ".debug_line_str"
+  ],
+  "entry_points": {
+    "entry_address": "0x10a0",
+    "main_candidates": [
+      "_start",
+      "main"
+    ],
+    "input_functions": []
+  },
+  "suspected_vulns": [
+    {
+      "function": "unknown",
+      "type": "win_marker",
+      "evidence": "binary string suggests success marker: FLAG{integer_wraparound_path}"
+    }
+  ],
+  "pruned_context": [
+    {
+      "function": "__isoc99_scanf@plt",
+      "reason": "sink_pattern",
+      "snippet": "0000000000001090 <__isoc99_scanf@plt>:\n    1090:\tf3 0f 1e fa          \tendbr64\n    1094:\tff 25 36 2f 00 00    \tjmp    QWORD PTR [rip+0x2f36]        # 3fd0 <__isoc99_scanf@GLIBC_2.7>\n    109a:\t66 0f 1f 44 00 00    \tnop    WORD PTR [rax+rax*1+0x0]\n\nDisassembly of section .text:\n"
+    },
+    {
+      "function": "main",
+      "reason": "name_hint",
+      "snippet": "0000000000001189 <main>:\n    1189:\tf3 0f 1e fa          \tendbr64\n    118d:\t55                   \tpush   rbp\n    118e:\t48 89 e5             \tmov    rbp,rsp\n    1191:\t48 83 ec 10          \tsub    rsp,0x10\n    1195:\t64 48 8b 04 25 28 00 \tmov    rax,QWORD PTR fs:0x28\n    119c:\t00 00 \n    119e:\t48 89 45 f8          \tmov    QWORD PTR [rbp-0x8],rax\n    11a2:\t31 c0                \txor    eax,eax\n    11a4:\tc7 45 f0 00 00 00 00 \tmov    DWORD PTR [rbp-0x10],0x0\n    11ab:\t48 8d 05 52 0e 00 00 \tlea    rax,[rip+0xe52]        # 2004 <_IO_stdin_used+0x4>\n    11b2:\t48 89 c7             \tmov    rdi,rax\n    11b5:\te8 b6 fe ff ff       \tcall   1070 <puts@plt>\n    11ba:\t48 8d 45 f0          \tlea    rax,[rbp-0x10]\n    11be:\t48 89 c6             \tmov    rsi,rax\n    11c1:\t48 8d 05 57 0e 00 00 \tlea    rax,[rip+0xe57]        # 201f <_IO_stdin_used+0x1f>\n    11c8:\t48 89 c7             \tmov    rdi,rax\n    11cb:\tb8 00 00 00 00       \tmov    eax,0x0\n    11d0:\te8 bb fe ff ff       \tcall   1090 <__isoc99_scanf@plt>\n    11d5:\t83 f8 01             \tcmp    eax,0x1\n    11d8:\t74 07                \tje     11e1 <main+0x58>\n    11da:\tb8 01 00 00 00       \tmov    eax,0x1\n    11df:\teb 3c                \tjmp    121d <main+0x94>\n    11e1:\t8b 45 f0             \tmov    eax,DWORD PTR [rbp-0x10]\n    11e4:\t89 45 f4             \tmov    DWORD PTR [rbp-0xc],eax\n    11e7:\t83 7d f4 00          \tcmp    DWORD PTR [rbp-0xc],0x0\n    11eb:\t79 1c                \tjns    1209 <main+0x80>\n    11ed:\t83 7d f4 c6          \tcmp    DWORD PTR [rbp-0xc],0xffffffc6\n    11f1:\t75 16                \tjne    1209 <main+0x80>\n    11f3:\t48 8d 05 28 0e 00 00 \tlea    rax,[rip+0xe28]        # 2022 <_IO_stdin_used+0x22>\n    11fa:\t48 89 c7             \tmov    rdi,rax\n    11fd:\te8 6e fe ff ff       \tcall   1070 <puts@plt>\n    1202:\tb8 00 00 00 00       \tmov    eax,0x0\n    1207:\teb 14                \tjmp    121d <main+0x94>\n    1209:\t48 8d 05 30 0e 00 00 \tlea    rax,[rip+0xe30]        # 2040 <_IO_stdin_used+0x40>\n    1210:\t48 89 c7             \tmov    rdi,rax\n    1213:\te8 58 fe ff ff       \tcall   1070 <puts@plt>\n    1218:\tb8 01 00 00 00       \tmov    eax,0x1\n    121d:\t48 8b 55 f8          \tmov    rdx,QWORD PTR [rbp-0x8]\n    1221:\t64 48 2b 14 25 28 00 \tsub    rdx,QWORD PTR fs:0x28\n    1228:\t00 00 \n    122a:\t74 05                \tje     1231 <main+0xa8>\n    122c:\te8 4f fe ff ff       \tcall   1080 <__stack_chk_fail@plt>\n    1231:\tc9                   \tleave\n    1232:\tc3                   \tret\n\nDisassembly of section .fini:\n"
+    }
+  ],
+  "helper_insights": {
+    "challenge_class": "unknown",
+    "challenge_family": "unknown",
+    "recommended_methods": [
+      "derive a concrete exploit from the analysis report and runtime feedback"
+    ],
+    "prompt_warnings": [
+      "PIE is enabled; avoid hardcoding absolute code addresses unless you have a leak or non-PIE evidence.",
+      "Stack canary is enabled; simple stack smashing may fail unless the challenge design clearly bypasses it."
+    ],
+    "recommended_local_tools": [
+      "readelf_symbols",
+      "readelf_sections",
+      "run_head"
+    ],
+    "recommended_preruns": [
+      "capture startup output before guessing interaction"
+    ],
+    "runtime_hints": [
+      "This challenge may depend on sidecar shared libraries or helper files in the runtime directory."
+    ],
+    "completion_requirements": [],
+    "bootstrap_bundle": {
+      "tool_requests": [
+        {
+          "tool": "readelf_sections",
+          "args": {}
+        },
+        {
+          "tool": "readelf_relocs",
+          "args": {}
+        },
+        {
+          "tool": "readelf_symbols",
+          "args": {
+            "pattern": "main|win|ret|foothold|print_file|system|call|pivot|useful|csu"
+          }
+        }
+      ],
+      "command_requests": [
+        {
+          "command": "file_info",
+          "args": {}
+        },
+        {
+          "command": "nearby_files",
+          "args": {}
+        },
+        {
+          "command": "ldd",
+          "args": {}
+        },
+        {
+          "command": "run_head",
+          "args": {
+            "timeout": 2
+          }
+        }
+      ]
+    },
+    "candidate_inputs": [
+      "FLAG{integer_wraparound_path}",
+      "puts",
+      "libc.so.6",
+      "_ITM_deregisterTMCloneTable",
+      "_ITM_registerTMCloneTable",
+      "PTE1",
+      "main",
+      "types.h",
+      "stdint-intn.h",
+      "stdint-uintn.h",
+      "stdio.h",
+      "Scrt1.o",
+      "crtstuff.c",
+      "deregister_tm_clones",
+      "completed.0",
+      "frame_dummy",
+      "integer_edge.c",
+      "_DYNAMIC",
+      "_GLOBAL_OFFSET_TABLE_",
+      "_edata"
+    ],
+    "candidate_offsets": [],
+    "candidate_symbols": [],
+    "success_markers": [
+      "FLAG{integer_wraparound_path}"
+    ]
+  },
+  "notes": []
+}

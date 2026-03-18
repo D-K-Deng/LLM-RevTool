@@ -1,0 +1,65 @@
+{
+  "binary_path": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/format_string",
+  "run_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/format_string_2026-03-18T21-33-27+00-00",
+  "solved": true,
+  "success_attempt": 2,
+  "success_round": 4,
+  "attempts_used": 2,
+  "max_iterations": 1,
+  "max_inner_rounds_per_attempt": 15,
+  "max_generation_attempts_per_round": 8,
+  "elapsed_seconds": 498.247,
+  "strict_output": true,
+  "enable_pruning": true,
+  "last_error": "Exploit exited with code 0 without success markers.",
+  "attempt_logs": [
+    {
+      "attempt": 1,
+      "generation_used_format_repair": false,
+      "verification_status": "failed",
+      "failure_reason": "Exploit exited with code 0 without success markers.",
+      "success_reason": "",
+      "strategy": "heuristic_branch_input"
+    },
+    {
+      "attempt": 2,
+      "llm_attempt": 1,
+      "round": 1,
+      "draft": 1,
+      "generation_used_format_repair": true,
+      "verification_status": "failed",
+      "failure_reason": "Exploit exited with code 0 without success markers.",
+      "success_reason": ""
+    },
+    {
+      "attempt": 2,
+      "llm_attempt": 1,
+      "round": 2,
+      "draft": 2,
+      "generation_used_format_repair": true,
+      "verification_status": "failed",
+      "failure_reason": "Exploit exited with code 0 without success markers.",
+      "success_reason": ""
+    },
+    {
+      "attempt": 2,
+      "llm_attempt": 1,
+      "round": 3,
+      "draft": 3,
+      "generation_used_format_repair": true,
+      "verification_status": "failed",
+      "failure_reason": "Exploit exited with code 0 without success markers.",
+      "success_reason": ""
+    },
+    {
+      "attempt": 2,
+      "llm_attempt": 1,
+      "round": 4,
+      "draft": 4,
+      "generation_used_format_repair": false,
+      "verification_status": "success",
+      "failure_reason": "",
+      "success_reason": "Matched success regex in process output."
+    }
+  ]
+}

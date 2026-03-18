@@ -1,6 +1,0 @@
-SECTION A: Failure Diagnosis
-
-The previous attempt failed due to a `SIGSEGV` (exit code -11) immediately after sending the first stage payload, followed by an `EOFError` when attempting to `p.recvuntil(b'Thank you!\n')`. This indicates a crash during or immediately after the stack pivot.
-
-The core issues were:
-1.  **

@@ -1,0 +1,14 @@
+{
+  "tool_results": [],
+  "command_results": [
+    {
+      "command": "run_with_stdin",
+      "status": "ok",
+      "args": {
+        "input_text": "COSC269\n"
+      },
+      "output": "Say the course code:\nWIN"
+    }
+  ],
+  "shell_results": []
+}

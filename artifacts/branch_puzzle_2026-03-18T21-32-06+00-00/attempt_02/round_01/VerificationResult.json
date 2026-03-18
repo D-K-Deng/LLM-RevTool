@@ -1,0 +1,28 @@
+{
+  "attempt": 2,
+  "status": "success",
+  "stdout_tail": "Say the course code:\nWIN\n\n",
+  "stderr_tail": "",
+  "exit_code": 0,
+  "signal": null,
+  "timeout": false,
+  "artifacts": {
+    "exploit_path": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/branch_puzzle_2026-03-18T21-32-06+00-00/attempt_02/round_01/exploit.py",
+    "attempt_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/branch_puzzle_2026-03-18T21-32-06+00-00/attempt_02/round_01",
+    "outer_attempt_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/branch_puzzle_2026-03-18T21-32-06+00-00/attempt_02"
+  },
+  "success_reason": "Matched success regex in process output.",
+  "failure_reason": "",
+  "feedback_payload": {
+    "status": "success",
+    "exit_code": 0,
+    "signal": null,
+    "timeout": false,
+    "stdout_tail": "Say the course code:\nWIN\n\n",
+    "stderr_tail": "",
+    "failure_reason": "",
+    "success_reason": "Matched success regex in process output."
+  },
+  "round": 1,
+  "draft": 1
+}

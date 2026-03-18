@@ -1,5 +1,0 @@
-- runtime_dir=/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/downloads/fluff
-- A flag.txt file exists in the runtime directory.
-- The constrained gadget family includes `xlat`.
-- The constrained gadget family includes `bextr`.
-- The constrained gadget family includes `stos`.

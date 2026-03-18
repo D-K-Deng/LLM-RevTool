@@ -1,7 +1,0 @@
-{
-  "tool_requests": [],
-  "command_requests": [],
-  "shell_requests": [],
-  "why": "tool planning parse failed: No JSON object found in tool plan response.",
-  "raw_text": "I need to gather more information about `libpivot.so` to find the `ret2win` function and a `pop rdi; ret` gadget. The previous `objdump` command for `libpivot.so` was truncated and failed due to path issues. I will use `objdump_disasm` on both the main binary and `libpivot.so` to get"
-}

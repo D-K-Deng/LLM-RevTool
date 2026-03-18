@@ -1,7 +1,0 @@
-{
-  "attempt": 1,
-  "round": 8,
-  "draft": 24,
-  "status": "generation_rejected",
-  "error": "Generated exploit has Python syntax error: invalid syntax at line 22"
-}

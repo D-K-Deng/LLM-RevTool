@@ -81,13 +81,13 @@ class SolveOrchestrator:
         attempts_used = 0
 
         heuristic_code = _build_heuristic_exploit(analysis_report.to_dict())
-        start_attempt = 1
+        has_heuristic = bool(heuristic_code)
         if heuristic_code:
             attempts_used = 1
             print(f"[solving] {binary_path.name}: attempt 1 heuristic", flush=True)
-            attempt_dir = run_dir / "attempt_01"
-            ensure_dir(attempt_dir)
-            exploit_path = attempt_dir / "exploit.py"
+            heuristic_dir = run_dir / "attempt_01"
+            ensure_dir(heuristic_dir)
+            exploit_path = heuristic_dir / "exploit.py"
             exploit_path.write_text(heuristic_code + "\n", encoding="utf-8")
             heuristic_strategy = _infer_heuristic_strategy(heuristic_code)
             heuristic_payload = {
@@ -97,7 +97,7 @@ class SolveOrchestrator:
                 "raw_text": "heuristic_pre_llm_attempt",
                 "used_format_repair": False,
             }
-            write_json(attempt_dir / "GenerationResult.json", heuristic_payload)
+            write_json(heuristic_dir / "GenerationResult.json", heuristic_payload)
             ver = self.verifier.verify(
                 binary_path=binary_path,
                 exploit_path=exploit_path,
@@ -106,9 +106,9 @@ class SolveOrchestrator:
             )
             ver.artifacts = {
                 "exploit_path": str(exploit_path.resolve()),
-                "attempt_dir": str(attempt_dir.resolve()),
+                "attempt_dir": str(heuristic_dir.resolve()),
             }
-            write_json(attempt_dir / "VerificationResult.json", ver.to_dict())
+            write_json(heuristic_dir / "VerificationResult.json", ver.to_dict())
             attempt_logs.append(
                 {
                     "attempt": 1,
@@ -132,7 +132,7 @@ class SolveOrchestrator:
             if ver.status == "success":
                 solved = True
                 success_attempt = 1
-                success_round = 1
+                success_round = 0
                 print(f"[solving] {binary_path.name}: solved on heuristic attempt", flush=True)
             else:
                 print(
@@ -142,13 +142,13 @@ class SolveOrchestrator:
                 feedback = ver.feedback_payload
                 last_error = ver.failure_reason
                 previous_code = heuristic_code
-                start_attempt = 2
 
-        for attempt in range(start_attempt, iterations + 1):
+        for llm_attempt in range(1, iterations + 1):
             if solved:
                 break
-            attempts_used = attempt
-            attempt_dir = run_dir / f"attempt_{attempt:02d}"
+            display_attempt = llm_attempt + (1 if has_heuristic else 0)
+            attempts_used = display_attempt
+            attempt_dir = run_dir / f"attempt_{display_attempt:02d}"
             ensure_dir(attempt_dir)
             attempt_feedback = feedback
             attempt_previous_code = previous_code
@@ -170,7 +170,7 @@ class SolveOrchestrator:
                 generation_payload = {}
                 draft_idx = generation_attempts
                 generation_label = (
-                    f"[solving] {binary_path.name}: attempt {attempt} round {round_idx} "
+                    f"[solving] {binary_path.name}: attempt {display_attempt} round {round_idx} "
                     f"draft {draft_idx}"
                 )
 
@@ -186,7 +186,7 @@ class SolveOrchestrator:
                         )
                         attempt_reflection_text = self.generator.reflect(
                             analysis=analysis_report.to_dict(),
-                            attempt=attempt,
+                            attempt=display_attempt,
                             feedback=attempt_feedback,
                             previous_code=attempt_previous_code,
                             attempt_history=attempt_history,
@@ -199,7 +199,7 @@ class SolveOrchestrator:
                         )
                     tool_plan = self.generator.plan_tools(
                         analysis=analysis_report.to_dict(),
-                        attempt=attempt,
+                        attempt=display_attempt,
                         feedback=attempt_feedback,
                         previous_code=attempt_previous_code,
                         reflection_text=attempt_reflection_text,
@@ -266,7 +266,7 @@ class SolveOrchestrator:
                     )
                     attempt_exploit_plan_text = self.generator.plan_exploit(
                         analysis=analysis_report.to_dict(),
-                        attempt=attempt,
+                        attempt=display_attempt,
                         feedback=attempt_feedback,
                         previous_code=attempt_previous_code,
                         reflection_text=attempt_reflection_text,
@@ -293,7 +293,7 @@ class SolveOrchestrator:
                                     code=attempt_previous_code,
                                     verification_feedback=attempt_feedback,
                                     analysis=analysis_report.to_dict(),
-                                    attempt=attempt,
+                                    attempt=display_attempt,
                                     reflection_text=attempt_reflection_text,
                                     tool_results_text=attempt_tool_results_text,
                                     scaffold_mode=True,
@@ -304,7 +304,7 @@ class SolveOrchestrator:
                                     code=attempt_previous_code,
                                     issue=str(attempt_feedback.get("error", "")),
                                     analysis=analysis_report.to_dict(),
-                                    attempt=attempt,
+                                    attempt=display_attempt,
                                     feedback=attempt_feedback,
                                     reflection_text=attempt_reflection_text,
                                     tool_results_text=attempt_tool_results_text,
@@ -313,7 +313,7 @@ class SolveOrchestrator:
                             else:
                                 generation = self.generator.generate_scaffolded(
                                     analysis=analysis_report.to_dict(),
-                                    attempt=attempt,
+                                    attempt=display_attempt,
                                     feedback=attempt_feedback,
                                     attempt_history=attempt_history,
                                     previous_code=attempt_previous_code,
@@ -326,7 +326,7 @@ class SolveOrchestrator:
                                 raise
                             generation = self.generator.generate_scaffolded(
                                 analysis=analysis_report.to_dict(),
-                                attempt=attempt,
+                                attempt=display_attempt,
                                 feedback=attempt_feedback,
                                 attempt_history=attempt_history,
                                 previous_code=attempt_previous_code,
@@ -337,7 +337,7 @@ class SolveOrchestrator:
                     else:
                         generation = self.generator.generate(
                             analysis=analysis_report.to_dict(),
-                            attempt=attempt,
+                            attempt=display_attempt,
                             feedback=attempt_feedback,
                             strict_output=strict,
                             attempt_history=attempt_history,
@@ -374,13 +374,13 @@ class SolveOrchestrator:
                                 repaired = self.generator.repair_code_quality(
                                     code=prepared_code,
                                     issue=repair_issue,
-                                analysis=analysis_report.to_dict(),
-                                attempt=attempt,
-                                feedback=attempt_feedback,
-                                reflection_text=attempt_reflection_text,
-                                tool_results_text=attempt_tool_results_text,
-                                scaffold_mode=scaffold_mode,
-                            )
+                                    analysis=analysis_report.to_dict(),
+                                    attempt=display_attempt,
+                                    feedback=attempt_feedback,
+                                    reflection_text=attempt_reflection_text,
+                                    tool_results_text=attempt_tool_results_text,
+                                    scaffold_mode=scaffold_mode,
+                                )
                             except (LLMError, GenerationParseError):
                                 break
 
@@ -410,7 +410,8 @@ class SolveOrchestrator:
 
                     if code_quality_issue:
                         issue = {
-                            "attempt": attempt,
+                            "attempt": display_attempt,
+                            "llm_attempt": llm_attempt,
                             "round": round_idx,
                             "draft": draft_idx,
                             "status": "generation_rejected",
@@ -425,7 +426,8 @@ class SolveOrchestrator:
                         )
                         attempt_history.append(
                             {
-                                "attempt": attempt,
+                                "attempt": display_attempt,
+                                "llm_attempt": llm_attempt,
                                 "round": round_idx,
                                 "draft": draft_idx,
                                 "phase": "generation",
@@ -436,7 +438,8 @@ class SolveOrchestrator:
                             }
                         )
                         attempt_feedback = {
-                            "attempt": attempt,
+                            "attempt": display_attempt,
+                            "llm_attempt": llm_attempt,
                             "round": round_idx,
                             "draft": draft_idx,
                             "status": "generation_rejected",
@@ -450,7 +453,8 @@ class SolveOrchestrator:
                         continue
                 except (LLMError, GenerationParseError) as exc:
                     err = {
-                        "attempt": attempt,
+                        "attempt": display_attempt,
+                        "llm_attempt": llm_attempt,
                         "round": round_idx,
                         "draft": draft_idx,
                         "status": "generation_failed",
@@ -466,7 +470,8 @@ class SolveOrchestrator:
                     )
                     attempt_history.append(
                         {
-                            "attempt": attempt,
+                            "attempt": display_attempt,
+                            "llm_attempt": llm_attempt,
                             "round": round_idx,
                             "draft": draft_idx,
                             "phase": "generation",
@@ -477,7 +482,8 @@ class SolveOrchestrator:
                         }
                     )
                     attempt_feedback = {
-                        "attempt": attempt,
+                        "attempt": display_attempt,
+                        "llm_attempt": llm_attempt,
                         "round": round_idx,
                         "draft": draft_idx,
                         "status": "generation_failed",
@@ -491,7 +497,8 @@ class SolveOrchestrator:
                     continue
                 except Exception as exc:  # noqa: BLE001
                     err = {
-                        "attempt": attempt,
+                        "attempt": display_attempt,
+                        "llm_attempt": llm_attempt,
                         "round": round_idx,
                         "draft": draft_idx,
                         "status": "unexpected_generation_error",
@@ -507,7 +514,8 @@ class SolveOrchestrator:
                     )
                     attempt_history.append(
                         {
-                            "attempt": attempt,
+                            "attempt": display_attempt,
+                            "llm_attempt": llm_attempt,
                             "round": round_idx,
                             "draft": draft_idx,
                             "phase": "generation",
@@ -518,7 +526,8 @@ class SolveOrchestrator:
                         }
                     )
                     attempt_feedback = {
-                        "attempt": attempt,
+                        "attempt": display_attempt,
+                        "llm_attempt": llm_attempt,
                         "round": round_idx,
                         "draft": draft_idx,
                         "status": "unexpected_generation_error",
@@ -530,7 +539,7 @@ class SolveOrchestrator:
                 ver: VerificationResult = self.verifier.verify(
                     binary_path=binary_path,
                     exploit_path=exploit_path,
-                    attempt=attempt,
+                    attempt=display_attempt,
                     success_regex=success_regex,
                 )
                 ver.artifacts = {
@@ -550,7 +559,7 @@ class SolveOrchestrator:
                             code=prepared_code,
                             verification_feedback=ver.feedback_payload,
                             analysis=analysis_report.to_dict(),
-                            attempt=attempt,
+                            attempt=display_attempt,
                             reflection_text=attempt_reflection_text,
                             tool_results_text=attempt_tool_results_text,
                             scaffold_mode=scaffold_mode,
@@ -581,7 +590,7 @@ class SolveOrchestrator:
                             ver = self.verifier.verify(
                                 binary_path=binary_path,
                                 exploit_path=exploit_path,
-                                attempt=attempt,
+                                attempt=display_attempt,
                                 success_regex=success_regex,
                             )
                             ver.artifacts = {
@@ -599,7 +608,8 @@ class SolveOrchestrator:
                         pass
 
                 log_item = {
-                    "attempt": attempt,
+                    "attempt": display_attempt,
+                    "llm_attempt": llm_attempt,
                     "round": round_idx,
                     "draft": draft_idx,
                     "generation_used_format_repair": generation_payload.get("used_format_repair", False),
@@ -610,7 +620,8 @@ class SolveOrchestrator:
                 attempt_logs.append(log_item)
                 attempt_history.append(
                     {
-                        "attempt": attempt,
+                        "attempt": display_attempt,
+                        "llm_attempt": llm_attempt,
                         "round": round_idx,
                         "draft": draft_idx,
                         "phase": "verification",
@@ -624,10 +635,10 @@ class SolveOrchestrator:
 
                 if ver.status == "success":
                     solved = True
-                    success_attempt = attempt
+                    success_attempt = display_attempt
                     success_round = round_idx
                     print(
-                        f"[solving] {binary_path.name}: solved on attempt {attempt} round {round_idx}",
+                        f"[solving] {binary_path.name}: solved on attempt {display_attempt} round {round_idx}",
                         flush=True,
                     )
                     verified_rounds += 1
@@ -637,7 +648,7 @@ class SolveOrchestrator:
                 last_error = ver.failure_reason
                 verified_rounds += 1
                 print(
-                    f"[solving] {binary_path.name}: attempt {attempt} round {round_idx} failed - {ver.failure_reason}",
+                    f"[solving] {binary_path.name}: attempt {display_attempt} round {round_idx} failed - {ver.failure_reason}",
                     flush=True,
                 )
 
@@ -648,7 +659,8 @@ class SolveOrchestrator:
                 last_error = budget_error
                 attempt_logs.append(
                     {
-                        "attempt": attempt,
+                        "attempt": display_attempt,
+                        "llm_attempt": llm_attempt,
                         "round": verified_rounds + 1,
                         "draft": generation_attempts,
                         "status": "generation_budget_exhausted",
@@ -656,7 +668,7 @@ class SolveOrchestrator:
                     }
                 )
                 print(
-                    f"[solving] {binary_path.name}: attempt {attempt} stopped - {budget_error}",
+                    f"[solving] {binary_path.name}: attempt {display_attempt} stopped - {budget_error}",
                     flush=True,
                 )
 

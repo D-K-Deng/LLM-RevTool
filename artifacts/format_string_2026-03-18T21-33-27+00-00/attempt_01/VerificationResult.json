@@ -1,0 +1,25 @@
+{
+  "attempt": 1,
+  "status": "failed",
+  "stdout_tail": "Name:\n_flags2\nTry again\n\n",
+  "stderr_tail": "",
+  "exit_code": 0,
+  "signal": null,
+  "timeout": false,
+  "artifacts": {
+    "exploit_path": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/format_string_2026-03-18T21-33-27+00-00/attempt_01/exploit.py",
+    "attempt_dir": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/artifacts/format_string_2026-03-18T21-33-27+00-00/attempt_01"
+  },
+  "success_reason": "",
+  "failure_reason": "Exploit exited with code 0 without success markers.",
+  "feedback_payload": {
+    "status": "failed",
+    "exit_code": 0,
+    "signal": null,
+    "timeout": false,
+    "stdout_tail": "Name:\n_flags2\nTry again\n\n",
+    "stderr_tail": "",
+    "failure_reason": "Exploit exited with code 0 without success markers.",
+    "success_reason": ""
+  }
+}

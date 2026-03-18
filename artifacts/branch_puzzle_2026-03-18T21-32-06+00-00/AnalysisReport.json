@@ -1,0 +1,266 @@
+{
+  "binary_path": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/branch_puzzle",
+  "binary_name": "branch_puzzle",
+  "timestamp": "2026-03-18T21:32:06+00:00",
+  "architecture": "amd64",
+  "protections": {
+    "pie": true,
+    "nx": true,
+    "canary": true,
+    "relro": "full"
+  },
+  "imports": [
+    "(2)",
+    "(3)",
+    "(4)",
+    "UND",
+    "_ITM_deregisterTMCloneTable",
+    "_ITM_registerTMCloneTable",
+    "__cxa_finalize",
+    "__gmon_start__",
+    "__libc_start_main",
+    "__stack_chk_fail",
+    "fgets",
+    "puts",
+    "strcmp",
+    "strcspn"
+  ],
+  "exports": [
+    "stdin@GLIBC_2.2.5"
+  ],
+  "interesting_strings": [
+    "_flags",
+    "GNU C17 13.3.0 -mtune=generic -march=x86-64 -g -O0 -fasynchronous-unwind-tables -fstack-protector-strong -fstack-clash-protection -fcf-protection",
+    "_flags2",
+    "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/src/branch_puzzle.c",
+    "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges",
+    "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/src",
+    "/lib64/ld-linux-x86-64.so.2",
+    "mgUa",
+    "fgets",
+    "stdin",
+    "puts",
+    "__stack_chk_fail",
+    "strcspn",
+    "__libc_start_main",
+    "__cxa_finalize",
+    "strcmp",
+    "libc.so.6",
+    "GLIBC_2.4",
+    "GLIBC_2.2.5",
+    "GLIBC_2.34",
+    "_ITM_deregisterTMCloneTable",
+    "__gmon_start__",
+    "_ITM_registerTMCloneTable",
+    "PTE1",
+    "u+UH",
+    "Say the course code:",
+    "COSC269",
+    "Nope",
+    "9*3$\"",
+    "GCC: (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0",
+    "_IO_buf_end",
+    "_old_offset",
+    "_IO_save_end",
+    "short int",
+    "size_t",
+    "_IO_write_ptr",
+    "_IO_buf_base",
+    "_markers",
+    "_IO_read_end",
+    "_freeres_buf",
+    "_lock",
+    "long int",
+    "_cur_column",
+    "_IO_FILE",
+    "unsigned char",
+    "_IO_marker",
+    "_shortbuf",
+    "_IO_write_base",
+    "_unused2",
+    "_IO_read_ptr",
+    "short unsigned int",
+    "main",
+    "_freeres_list",
+    "__pad5",
+    "_IO_codecvt",
+    "long unsigned int",
+    "_IO_write_end",
+    "__off64_t",
+    "__off_t",
+    "_chain",
+    "_IO_wide_data",
+    "_IO_backup_base",
+    "_mode",
+    "_IO_read_base",
+    "_vtable_offset",
+    "_IO_save_base",
+    "_fileno",
+    "_IO_lock_t",
+    "/usr/lib/gcc/x86_64-linux-gnu/13/include",
+    "/usr/include/x86_64-linux-gnu/bits",
+    "/usr/include/x86_64-linux-gnu/bits/types",
+    "/usr/include",
+    "stddef.h",
+    "types.h",
+    "struct_FILE.h",
+    "string.h",
+    "stdio.h",
+    "Scrt1.o",
+    "__abi_tag",
+    "crtstuff.c",
+    "deregister_tm_clones",
+    "__do_global_dtors_aux",
+    "completed.0",
+    "__do_global_dtors_aux_fini_array_entry",
+    "frame_dummy",
+    "__frame_dummy_init_array_entry",
+    "branch_puzzle.c",
+    "__FRAME_END__",
+    "_DYNAMIC",
+    "__GNU_EH_FRAME_HDR",
+    "_GLOBAL_OFFSET_TABLE_",
+    "__libc_start_main@GLIBC_2.34",
+    "puts@GLIBC_2.2.5",
+    "stdin@GLIBC_2.2.5",
+    "_edata",
+    "_fini",
+    "__stack_chk_fail@GLIBC_2.4",
+    "strcspn@GLIBC_2.2.5",
+    "fgets@GLIBC_2.2.5",
+    "__data_start",
+    "strcmp@GLIBC_2.2.5",
+    "__dso_handle",
+    "_IO_stdin_used",
+    "_end",
+    "__bss_start",
+    "__TMC_END__",
+    "__cxa_finalize@GLIBC_2.2.5",
+    "_init",
+    ".symtab",
+    ".strtab",
+    ".shstrtab",
+    ".interp",
+    ".note.gnu.property",
+    ".note.gnu.build-id",
+    ".note.ABI-tag",
+    ".gnu.hash",
+    ".dynsym",
+    ".dynstr",
+    ".gnu.version",
+    ".gnu.version_r"
+  ],
+  "entry_points": {
+    "entry_address": "0x10e0",
+    "main_candidates": [
+      "_start",
+      "main"
+    ],
+    "input_functions": [
+      "fgets"
+    ]
+  },
+  "suspected_vulns": [],
+  "pruned_context": [
+    {
+      "function": "fgets@plt",
+      "reason": "sink_pattern",
+      "snippet": "00000000000010c0 <fgets@plt>:\n    10c0:\tf3 0f 1e fa          \tendbr64\n    10c4:\tff 25 fe 2e 00 00    \tjmp    QWORD PTR [rip+0x2efe]        # 3fc8 <fgets@GLIBC_2.2.5>\n    10ca:\t66 0f 1f 44 00 00    \tnop    WORD PTR [rax+rax*1+0x0]\n"
+    },
+    {
+      "function": "main",
+      "reason": "name_hint",
+      "snippet": "00000000000011c9 <main>:\n    11c9:\tf3 0f 1e fa          \tendbr64\n    11cd:\t55                   \tpush   rbp\n    11ce:\t48 89 e5             \tmov    rbp,rsp\n    11d1:\t48 83 ec 50          \tsub    rsp,0x50\n    11d5:\t64 48 8b 04 25 28 00 \tmov    rax,QWORD PTR fs:0x28\n    11dc:\t00 00 \n    11de:\t48 89 45 f8          \tmov    QWORD PTR [rbp-0x8],rax\n    11e2:\t31 c0                \txor    eax,eax\n    11e4:\t48 c7 45 b0 00 00 00 \tmov    QWORD PTR [rbp-0x50],0x0\n    11eb:\t00 \n    11ec:\t48 c7 45 b8 00 00 00 \tmov    QWORD PTR [rbp-0x48],0x0\n    11f3:\t00 \n    11f4:\t48 c7 45 c0 00 00 00 \tmov    QWORD PTR [rbp-0x40],0x0\n    11fb:\t00 \n    11fc:\t48 c7 45 c8 00 00 00 \tmov    QWORD PTR [rbp-0x38],0x0\n    1203:\t00 \n    1204:\t48 c7 45 d0 00 00 00 \tmov    QWORD PTR [rbp-0x30],0x0\n    120b:\t00 \n    120c:\t48 c7 45 d8 00 00 00 \tmov    QWORD PTR [rbp-0x28],0x0\n    1213:\t00 \n    1214:\t48 c7 45 e0 00 00 00 \tmov    QWORD PTR [rbp-0x20],0x0\n    121b:\t00 \n    121c:\t48 c7 45 e8 00 00 00 \tmov    QWORD PTR [rbp-0x18],0x0\n    1223:\t00 \n    1224:\t48 8d 05 d9 0d 00 00 \tlea    rax,[rip+0xdd9]        # 2004 <_IO_stdin_used+0x4>\n    122b:\t48 89 c7             \tmov    rdi,rax\n    122e:\te8 5d fe ff ff       \tcall   1090 <puts@plt>\n    1233:\t48 8b 15 d6 2d 00 00 \tmov    rdx,QWORD PTR [rip+0x2dd6]        # 4010 <stdin@GLIBC_2.2.5>\n    123a:\t48 8d 45 b0          \tlea    rax,[rbp-0x50]\n    123e:\tbe 40 00 00 00       \tmov    esi,0x40\n    1243:\t48 89 c7             \tmov    rdi,rax\n    1246:\te8 75 fe ff ff       \tcall   10c0 <fgets@plt>\n    124b:\t48 85 c0             \ttest   rax,rax\n    124e:\t75 07                \tjne    1257 <main+0x8e>\n    1250:\tb8 01 00 00 00       \tmov    eax,0x1\n    1255:\teb 5f                \tjmp    12b6 <main+0xed>\n    1257:\t48 8d 45 b0          \tlea    rax,[rbp-0x50]\n    125b:\t48 8d 15 b7 0d 00 00 \tlea    rdx,[rip+0xdb7]        # 2019 <_IO_stdin_used+0x19>\n    1262:\t48 89 d6             \tmov    rsi,rdx\n    1265:\t48 89 c7             \tmov    rdi,rax\n    1268:\te8 43 fe ff ff       \tcall   10b0 <strcspn@plt>\n    126d:\tc6 44 05 b0 00       \tmov    BYTE PTR [rbp+rax*1-0x50],0x0\n    1272:\t48 8d 45 b0          \tlea    rax,[rbp-0x50]\n    1276:\t48 8d 15 9f 0d 00 00 \tlea    rdx,[rip+0xd9f]        # 201c <_IO_stdin_used+0x1c>\n    127d:\t48 89 d6             \tmov    rsi,rdx\n    1280:\t48 89 c7             \tmov    rdi,rax\n    1283:\te8 48 fe ff ff       \tcall   10d0 <strcmp@plt>\n    1288:\t85 c0                \ttest   eax,eax\n    128a:\t75 16                \tjne    12a2 <main+0xd9>\n    128c:\t48 8d 05 91 0d 00 00 \tlea    rax,[rip+0xd91]        # 2024 <_IO_stdin_used+0x24>\n    1293:\t48 89 c7             \tmov    rdi,rax\n    1296:\te8 f5 fd ff ff       \tcall   1090 <puts@plt>\n    129b:\tb8 00 00 00 00       \tmov    eax,0x0\n    12a0:\teb 14                \tjmp    12b6 <main+0xed>\n    12a2:\t48 8d 05 7f 0d 00 00 \tlea    rax,[rip+0xd7f]        # 2028 <_IO_stdin_used+0x28>\n    12a9:\t48 89 c7             \tmov    rdi,rax\n    12ac:\te8 df fd ff ff       \tcall   1090 <puts@plt>\n    12b1:\tb8 01 00 00 00       \tmov    eax,0x1\n    12b6:\t48 8b 55 f8          \tmov    rdx,QWORD PTR [rbp-0x8]\n    12ba:\t64 48 2b 14 25 28 00 \tsub    rdx,QWORD PTR fs:0x28\n    12c1:\t00 00 \n    12c3:\t74 05                \tje     12ca <main+0x101>\n    12c5:\te8 d6 fd ff ff       \tcall   10a0 <__stack_chk_fail@plt>\n    12ca:\tc9                   \tleave\n    12cb:\tc3                   \tret\n\nDisassembly of section .fini:\n"
+    }
+  ],
+  "helper_insights": {
+    "challenge_class": "branch_input",
+    "challenge_family": "direct_input_validation",
+    "recommended_methods": [
+      "extract concrete secret/input from strings or disassembly",
+      "run target locally and send exact bytes including newline if needed"
+    ],
+    "prompt_warnings": [
+      "PIE is enabled; avoid hardcoding absolute code addresses unless you have a leak or non-PIE evidence.",
+      "Stack canary is enabled; simple stack smashing may fail unless the challenge design clearly bypasses it.",
+      "This is likely not a memory-corruption exploit; send the exact expected input instead of crafting a payload."
+    ],
+    "recommended_local_tools": [
+      "strings_search",
+      "run_head",
+      "run_with_stdin"
+    ],
+    "recommended_preruns": [
+      "capture initial prompt with run_head",
+      "try exact candidate strings only after extracting them from strings/disassembly"
+    ],
+    "runtime_hints": [
+      "This challenge may depend on sidecar shared libraries or helper files in the runtime directory."
+    ],
+    "completion_requirements": [],
+    "bootstrap_bundle": {
+      "tool_requests": [
+        {
+          "tool": "readelf_sections",
+          "args": {}
+        },
+        {
+          "tool": "readelf_relocs",
+          "args": {}
+        },
+        {
+          "tool": "readelf_symbols",
+          "args": {
+            "pattern": "main|win|ret|foothold|print_file|system|call|pivot|useful|csu"
+          }
+        }
+      ],
+      "command_requests": [
+        {
+          "command": "file_info",
+          "args": {}
+        },
+        {
+          "command": "nearby_files",
+          "args": {}
+        },
+        {
+          "command": "ldd",
+          "args": {}
+        },
+        {
+          "command": "run_head",
+          "args": {
+            "timeout": 2
+          }
+        }
+      ]
+    },
+    "candidate_inputs": [
+      "_flags",
+      "_flags2",
+      "mgUa",
+      "fgets",
+      "stdin",
+      "puts",
+      "strcspn",
+      "strcmp",
+      "libc.so.6",
+      "_ITM_deregisterTMCloneTable",
+      "_ITM_registerTMCloneTable",
+      "PTE1",
+      "COSC269",
+      "Nope",
+      "_IO_buf_end",
+      "_old_offset",
+      "_IO_save_end",
+      "size_t",
+      "_IO_write_ptr",
+      "_IO_buf_base"
+    ],
+    "candidate_offsets": [],
+    "candidate_symbols": [],
+    "success_markers": []
+  },
+  "notes": []
+}

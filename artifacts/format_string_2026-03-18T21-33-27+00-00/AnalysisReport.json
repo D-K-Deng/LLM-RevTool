@@ -1,0 +1,289 @@
+{
+  "binary_path": "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/bin/format_string",
+  "binary_name": "format_string",
+  "timestamp": "2026-03-18T21:33:28+00:00",
+  "architecture": "amd64",
+  "protections": {
+    "pie": false,
+    "nx": true,
+    "canary": false,
+    "relro": "partial"
+  },
+  "imports": [
+    "(2)",
+    "(3)",
+    "UND",
+    "__gmon_start__",
+    "__libc_start_main",
+    "exit",
+    "fflush",
+    "fgets",
+    "printf",
+    "puts",
+    "setvbuf",
+    "strcspn"
+  ],
+  "exports": [
+    "stdin@GLIBC_2.2.5",
+    "stdout@GLIBC_2.2.5"
+  ],
+  "interesting_strings": [
+    "FLAG{format_string_write}",
+    "Name:",
+    "GNU C17 13.3.0 -mtune=generic -march=x86-64 -g -O0 -fno-stack-protector -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection",
+    "_flags2",
+    "name",
+    "_flags",
+    "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/src/format_string.c",
+    "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges",
+    "/mnt/e/Edu/Dartmouth/Winter 2026/COSC 269 Basics of Rev Engineering/HW/Final/challenges/src",
+    "/lib64/ld-linux-x86-64.so.2",
+    "fgets",
+    "setvbuf",
+    "stdin",
+    "puts",
+    "exit",
+    "fflush",
+    "stdout",
+    "strcspn",
+    "__libc_start_main",
+    "printf",
+    "libc.so.6",
+    "GLIBC_2.2.5",
+    "GLIBC_2.34",
+    "__gmon_start__",
+    "PTE1",
+    "H=H@@",
+    "Try again",
+    "9*3$\"",
+    "GCC: (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0",
+    "__off64_t",
+    "_IO_read_end",
+    "size_t",
+    "_IO_FILE",
+    "_IO_write_base",
+    "_IO_buf_end",
+    "_IO_read_ptr",
+    "__pad5",
+    "_mode",
+    "_chain",
+    "_IO_save_base",
+    "unsigned char",
+    "_freeres_buf",
+    "_IO_wide_data",
+    "_fileno",
+    "short unsigned int",
+    "_IO_save_end",
+    "_IO_lock_t",
+    "_markers",
+    "main",
+    "_old_offset",
+    "_lock",
+    "_IO_marker",
+    "_cur_column",
+    "long long unsigned int",
+    "_IO_codecvt",
+    "auth",
+    "_IO_buf_base",
+    "_vtable_offset",
+    "_freeres_list",
+    "__off_t",
+    "_unused2",
+    "long long int",
+    "_IO_write_end",
+    "short int",
+    "_IO_backup_base",
+    "_IO_write_ptr",
+    "_IO_read_base",
+    "_shortbuf",
+    "/usr/lib/gcc/x86_64-linux-gnu/13/include",
+    "/usr/include/x86_64-linux-gnu/bits",
+    "/usr/include/x86_64-linux-gnu/bits/types",
+    "/usr/include",
+    "stddef.h",
+    "types.h",
+    "struct_FILE.h",
+    "stdio.h",
+    "string.h",
+    "stdlib.h",
+    "crt1.o",
+    "__abi_tag",
+    "crtstuff.c",
+    "deregister_tm_clones",
+    "__do_global_dtors_aux",
+    "completed.0",
+    "__do_global_dtors_aux_fini_array_entry",
+    "frame_dummy",
+    "__frame_dummy_init_array_entry",
+    "format_string.c",
+    "__FRAME_END__",
+    "_DYNAMIC",
+    "__GNU_EH_FRAME_HDR",
+    "_GLOBAL_OFFSET_TABLE_",
+    "__libc_start_main@GLIBC_2.34",
+    "stdout@GLIBC_2.2.5",
+    "puts@GLIBC_2.2.5",
+    "stdin@GLIBC_2.2.5",
+    "_edata",
+    "_fini",
+    "printf@GLIBC_2.2.5",
+    "strcspn@GLIBC_2.2.5",
+    "fgets@GLIBC_2.2.5",
+    "__data_start",
+    "__dso_handle",
+    "_IO_stdin_used",
+    "fflush@GLIBC_2.2.5",
+    "_end",
+    "_dl_relocate_static_pie",
+    "__bss_start",
+    "setvbuf@GLIBC_2.2.5",
+    "exit@GLIBC_2.2.5",
+    "__TMC_END__",
+    "_init",
+    ".symtab",
+    ".strtab",
+    ".shstrtab",
+    ".interp",
+    ".note.gnu.property",
+    ".note.gnu.build-id",
+    ".note.ABI-tag",
+    ".gnu.hash"
+  ],
+  "entry_points": {
+    "entry_address": "0x401110",
+    "main_candidates": [
+      "_start",
+      "main"
+    ],
+    "input_functions": [
+      "fgets"
+    ]
+  },
+  "suspected_vulns": [
+    {
+      "function": "printf",
+      "type": "format_string_candidate",
+      "evidence": "printf-like sink imported; verify user-controlled format paths."
+    },
+    {
+      "function": "unknown",
+      "type": "win_marker",
+      "evidence": "binary string suggests success marker: FLAG{format_string_write}"
+    },
+    {
+      "function": "win",
+      "type": "interesting_function",
+      "evidence": "function name suggests privileged path"
+    }
+  ],
+  "pruned_context": [
+    {
+      "function": "printf@plt",
+      "reason": "sink_pattern",
+      "snippet": "00000000004010b0 <printf@plt>:\n  4010b0:\tf3 0f 1e fa          \tendbr64\n  4010b4:\tff 25 4e 2f 00 00    \tjmp    QWORD PTR [rip+0x2f4e]        # 404008 <printf@GLIBC_2.2.5>\n  4010ba:\t66 0f 1f 44 00 00    \tnop    WORD PTR [rax+rax*1+0x0]\n"
+    },
+    {
+      "function": "fgets@plt",
+      "reason": "sink_pattern",
+      "snippet": "00000000004010d0 <fgets@plt>:\n  4010d0:\tf3 0f 1e fa          \tendbr64\n  4010d4:\tff 25 3e 2f 00 00    \tjmp    QWORD PTR [rip+0x2f3e]        # 404018 <fgets@GLIBC_2.2.5>\n  4010da:\t66 0f 1f 44 00 00    \tnop    WORD PTR [rax+rax*1+0x0]\n"
+    },
+    {
+      "function": "win",
+      "reason": "from_suspected_vulns",
+      "snippet": "00000000004011f6 <win>:\n  4011f6:\tf3 0f 1e fa          \tendbr64\n  4011fa:\t55                   \tpush   rbp\n  4011fb:\t48 89 e5             \tmov    rbp,rsp\n  4011fe:\t48 8d 05 ff 0d 00 00 \tlea    rax,[rip+0xdff]        # 402004 <_IO_stdin_used+0x4>\n  401205:\t48 89 c7             \tmov    rdi,rax\n  401208:\te8 93 fe ff ff       \tcall   4010a0 <puts@plt>\n  40120d:\t48 8b 05 3c 2e 00 00 \tmov    rax,QWORD PTR [rip+0x2e3c]        # 404050 <stdout@GLIBC_2.2.5>\n  401214:\t48 89 c7             \tmov    rdi,rax\n  401217:\te8 c4 fe ff ff       \tcall   4010e0 <fflush@plt>\n  40121c:\tbf 00 00 00 00       \tmov    edi,0x0\n  401221:\te8 da fe ff ff       \tcall   401100 <exit@plt>\n"
+    },
+    {
+      "function": "main",
+      "reason": "name_hint",
+      "snippet": "0000000000401226 <main>:\n  401226:\tf3 0f 1e fa          \tendbr64\n  40122a:\t55                   \tpush   rbp\n  40122b:\t48 89 e5             \tmov    rbp,rsp\n  40122e:\t48 81 ec d0 00 00 00 \tsub    rsp,0xd0\n  401235:\t48 8b 05 14 2e 00 00 \tmov    rax,QWORD PTR [rip+0x2e14]        # 404050 <stdout@GLIBC_2.2.5>\n  40123c:\tb9 00 00 00 00       \tmov    ecx,0x0\n  401241:\tba 02 00 00 00       \tmov    edx,0x2\n  401246:\tbe 00 00 00 00       \tmov    esi,0x0\n  40124b:\t48 89 c7             \tmov    rdi,rax\n  40124e:\te8 9d fe ff ff       \tcall   4010f0 <setvbuf@plt>\n  401253:\t48 8d 05 c4 0d 00 00 \tlea    rax,[rip+0xdc4]        # 40201e <_IO_stdin_used+0x1e>\n  40125a:\t48 89 c7             \tmov    rdi,rax\n  40125d:\te8 3e fe ff ff       \tcall   4010a0 <puts@plt>\n  401262:\t48 8b 15 f7 2d 00 00 \tmov    rdx,QWORD PTR [rip+0x2df7]        # 404060 <stdin@GLIBC_2.2.5>\n  401269:\t48 8d 85 30 ff ff ff \tlea    rax,[rbp-0xd0]\n  401270:\tbe c8 00 00 00       \tmov    esi,0xc8\n  401275:\t48 89 c7             \tmov    rdi,rax\n  401278:\te8 53 fe ff ff       \tcall   4010d0 <fgets@plt>\n  40127d:\t48 85 c0             \ttest   rax,rax\n  401280:\t75 07                \tjne    401289 <main+0x63>\n  401282:\tb8 01 00 00 00       \tmov    eax,0x1\n  401287:\teb 6a                \tjmp    4012f3 <main+0xcd>\n  401289:\t48 8d 85 30 ff ff ff \tlea    rax,[rbp-0xd0]\n  401290:\t48 8d 15 8d 0d 00 00 \tlea    rdx,[rip+0xd8d]        # 402024 <_IO_stdin_used+0x24>\n  401297:\t48 89 d6             \tmov    rsi,rdx\n  40129a:\t48 89 c7             \tmov    rdi,rax\n  40129d:\te8 1e fe ff ff       \tcall   4010c0 <strcspn@plt>\n  4012a2:\tc6 84 05 30 ff ff ff \tmov    BYTE PTR [rbp+rax*1-0xd0],0x0\n  4012a9:\t00 \n  4012aa:\t48 8d 85 30 ff ff ff \tlea    rax,[rbp-0xd0]\n  4012b1:\t48 89 c7             \tmov    rdi,rax\n  4012b4:\tb8 00 00 00 00       \tmov    eax,0x0\n  4012b9:\te8 f2 fd ff ff       \tcall   4010b0 <printf@plt>\n  4012be:\t48 8d 05 62 0d 00 00 \tlea    rax,[rip+0xd62]        # 402027 <_IO_stdin_used+0x27>\n  4012c5:\t48 89 c7             \tmov    rdi,rax\n  4012c8:\te8 d3 fd ff ff       \tcall   4010a0 <puts@plt>\n  4012cd:\t8b 05 99 2d 00 00    \tmov    eax,DWORD PTR [rip+0x2d99]        # 40406c <auth>\n  4012d3:\t3d 37 13 00 00       \tcmp    eax,0x1337\n  4012d8:\t75 05                \tjne    4012df <main+0xb9>\n  4012da:\te8 17 ff ff ff       \tcall   4011f6 <win>\n  4012df:\t48 8d 05 42 0d 00 00 \tlea    rax,[rip+0xd42]        # 402028 <_IO_stdin_used+0x28>\n  4012e6:\t48 89 c7             \tmov    rdi,rax\n  4012e9:\te8 b2 fd ff ff       \tcall   4010a0 <puts@plt>\n  4012ee:\tb8 00 00 00 00       \tmov    eax,0x0\n  4012f3:\tc9                   \tleave\n  4012f4:\tc3                   \tret\n\nDisassembly of section .fini:\n"
+    }
+  ],
+  "helper_insights": {
+    "challenge_class": "unknown",
+    "challenge_family": "unknown",
+    "recommended_methods": [
+      "derive a concrete exploit from the analysis report and runtime feedback"
+    ],
+    "prompt_warnings": [],
+    "recommended_local_tools": [
+      "readelf_symbols",
+      "readelf_sections",
+      "run_head"
+    ],
+    "recommended_preruns": [
+      "capture startup output before guessing interaction"
+    ],
+    "runtime_hints": [
+      "This challenge may depend on sidecar shared libraries or helper files in the runtime directory."
+    ],
+    "completion_requirements": [],
+    "bootstrap_bundle": {
+      "tool_requests": [
+        {
+          "tool": "readelf_sections",
+          "args": {}
+        },
+        {
+          "tool": "readelf_relocs",
+          "args": {}
+        },
+        {
+          "tool": "readelf_symbols",
+          "args": {
+            "pattern": "main|win|ret|foothold|print_file|system|call|pivot|useful|csu"
+          }
+        }
+      ],
+      "command_requests": [
+        {
+          "command": "file_info",
+          "args": {}
+        },
+        {
+          "command": "nearby_files",
+          "args": {}
+        },
+        {
+          "command": "ldd",
+          "args": {}
+        },
+        {
+          "command": "run_head",
+          "args": {
+            "timeout": 2
+          }
+        }
+      ]
+    },
+    "candidate_inputs": [
+      "FLAG{format_string_write}",
+      "_flags2",
+      "name",
+      "_flags",
+      "fgets",
+      "setvbuf",
+      "stdin",
+      "puts",
+      "exit",
+      "fflush",
+      "stdout",
+      "strcspn",
+      "printf",
+      "libc.so.6",
+      "PTE1",
+      "_IO_read_end",
+      "size_t",
+      "_IO_FILE",
+      "_IO_write_base",
+      "_IO_buf_end"
+    ],
+    "candidate_offsets": [],
+    "candidate_symbols": [
+      "win"
+    ],
+    "success_markers": [
+      "FLAG{format_string_write}"
+    ]
+  },
+  "notes": []
+}

