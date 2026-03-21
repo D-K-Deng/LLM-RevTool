@@ -1,6 +1,6 @@
 # PwnGPT-Style Local AEG Pipeline
 
-This repository implements a local binary-exploitation pipeline with:
+This repository implements a binary-exploitation pipeline with:
 
 - analysis -> generation -> verification loops
 - local read-only tool use during solving
